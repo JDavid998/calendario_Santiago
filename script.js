@@ -340,20 +340,31 @@ function updateUserInfo() {
     document.getElementById('userName').textContent = currentUser.name;
     document.getElementById('userRole').textContent = currentUser.role === 'admin' ? 'Administrador' : 'Cliente';
 
-    // Mostrar botón de gestión de usuarios solo para admin
+    // Mostrar botones de gestión solo para admin
     if (currentUser.role === 'admin') {
         document.getElementById('btnUserManagement').style.display = 'flex';
+        const btnWorkspaces = document.getElementById('btnWorkspaceManagement');
+        if (btnWorkspaces) btnWorkspaces.style.display = 'flex';
     }
 }
 
 // Actualizar título del workspace
 function updateWorkspaceTitle() {
-    const workspaceNames = {
-        'personal': 'Personal',
-        'maacline': 'MAAC Line'
-    };
+    let workspaceName = currentWorkspace;
 
-    const workspaceName = workspaceNames[currentWorkspace] || currentWorkspace;
+    // Buscar nombre para mostrar en la lista de workspaces
+    if (window.workspaces) {
+        const ws = window.workspaces.find(w => w.name === currentWorkspace);
+        if (ws) workspaceName = ws.display_name;
+    } else {
+        // Fallback para nombres conocidos si workspaces no ha cargado
+        const workspaceNames = {
+            'personal': 'Personal',
+            'maacline': 'MAAC Line'
+        };
+        workspaceName = workspaceNames[currentWorkspace] || currentWorkspace;
+    }
+
     document.getElementById('workspaceName').textContent = workspaceName;
 }
 
