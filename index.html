@@ -237,22 +237,9 @@
                 </div>
             </div>
 
-            <div class="guiones-table-container">
-                <table class="guiones-table">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Formato</th>
-                            <th>Idea/Título</th>
-                            <th>Guión Completo</th>
-                            <th>Plataforma</th>
-                            <th>Estado</th>
-                            <th>Notas</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="guionesTableBody"></tbody>
-                </table>
+            <!-- Contenedor Grid para Tarjetas (Reemplaza tabla) -->
+            <div id="guionesGrid" class="guiones-grid">
+                <!-- Las tarjetas se generarán dinámicamente aquí -->
             </div>
 
 
@@ -310,9 +297,20 @@
                     <label for="guionTitulo">Idea/Título:</label>
                     <input type="text" id="guionTitulo" placeholder="Ej: Tutorial de maquillaje" required>
                 </div>
-                <div class="form-group">
-                    <label for="guionContenido">Guión Completo:</label>
-                    <textarea id="guionContenido" rows="6" placeholder="Escribe el guión completo..."></textarea>
+                <div class="form-group full-width" style="grid-column: 1 / -1;">
+                    <label>Guión Completo:</label>
+                    <div id="scriptEditorContainer" class="script-editor-container">
+                        <!-- La tabla dinámica se insertará aquí -->
+                    </div>
+                    <button type="button" id="addRowBtn" class="btn-secondary" style="margin-top: 12px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Añadir Fila
+                    </button>
+                    <input type="hidden" id="guionContenido">
                 </div>
                 <div class="form-row">
                     <div class="form-group">

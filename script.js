@@ -760,22 +760,26 @@ function renderGuiones() {
             <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-light);">
                 No hay guiones para mostrar. ${currentUser.role !== 'client' ? '¡Haz clic en "Nuevo Guión" para empezar!' : ''}
             </td>
-            </tr>
+            </div>
             `;
         return;
     }
 
-    filteredGuiones.forEach((guion, index) => {
-        const row = document.createElement('tr');
+    filteredGuiones.forEach((guion) => {
+        const card = document.createElement('div');
+        card.className = 'guion-card';
+
         const formattedDate = formatDate(guion.fecha);
         const statusClass = getStatusClass(guion.estado);
+        const formato = guion.formato || 'Carrusel';
+        const formatoClass = formato === 'Reel' ? 'reel' : 'carrusel'; // Para header color
 
-        const platText = Array.isArray(guion.plataformas) ? guion.plataformas.join(', ') : (guion.plataforma || '');
+        const platText = Array.isArray(guion.plataformas) ? guion.plataformas.slice(0, 3).join(', ') + (guion.plataformas.length > 3 ? '...' : '') : (guion.plataforma || '');
 
         let actions = `
             <div class="action-buttons">
                 <button class="btn-icon" onclick="viewGuion(${guion.id})" title="Ver detalles">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                         <circle cx="12" cy="12" r="3"></circle>
                     </svg>
@@ -784,42 +788,51 @@ function renderGuiones() {
         if (currentUser.role !== 'client') {
             actions += `
                 <button class="btn-icon" onclick="editGuion(${guion.id})" title="Editar">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
                     </button>
                     <button class="btn-icon btn-delete" onclick="deleteGuion(${guion.id})" title="Eliminar">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="3 6 5 6 21 6"></polyline>
                             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                         </svg>
                     </button>
             `;
         }
-
         actions += `</div>`;
 
-        const truncatedContent = guion.contenido && guion.contenido.length > 80
-            ? guion.contenido.substring(0, 80) + '...'
-            : (guion.contenido || '');
-
-        const formatoBadge = guion.formato ?
-            `<span class="${guion.formato === 'Carrusel' ? 'badge-carrusel' : 'badge-reel'}">${guion.formato}</span>` :
-            '-';
-
-        row.innerHTML = `
-            <td>${formattedDate}</td>
-            <td>${formatoBadge}</td>
-            <td><strong>${guion.titulo}</strong></td>
-            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${truncatedContent}</td>
-            <td>${platText}</td>
-            <td><span class="status-badge ${statusClass}">${guion.estado}</span></td>
-            <td>${guion.notas}</td>
-            <td>${actions}</td>
+        // Renderizar Card
+        card.innerHTML = `
+            <div class="guion-card-header ${formatoClass}">
+                <span class="badge-${formatoClass}" style="background:white; border:none;">${formato}</span>
+                <span class="status-badge ${statusClass}" style="transform: scale(0.9); margin:0;">${guion.estado}</span>
+            </div>
+            <div class="guion-card-body">
+                <div class="guion-card-date">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    ${formattedDate}
+                </div>
+                <h3 class="guion-card-title">${guion.titulo}</h3>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">
+                     <strong>Plataformas:</strong> ${platText}
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    ${guion.notas || ''}
+                </div>
+            </div>
+            <div class="guion-card-footer">
+                ${actions}
+            </div>
         `;
 
-        tbody.appendChild(row);
+        grid.appendChild(card);
     });
 }
 
@@ -847,8 +860,10 @@ async function saveGuion() {
 
     const fecha = document.getElementById('guionFecha').value;
     const titulo = document.getElementById('guionTitulo').value.trim();
-    const contenido = document.getElementById('guionContenido').value.trim();
     const formato = document.getElementById('guionFormato').value;
+
+    // Serializar datos del script editor
+    const contenido = serializeScriptData(formato);
 
     const checkboxes = document.querySelectorAll('input[name="plataforma"]:checked');
     const plataformas = Array.from(checkboxes).map(cb => cb.value);
@@ -932,8 +947,49 @@ function viewGuion(id) {
     const statusClass = getStatusClass(guion.estado);
     document.getElementById('viewGuionEstado').innerHTML = `<span class="status-badge ${statusClass}">${guion.estado}</span>`;
 
-    // Mostrar contenido completo (con saltos de línea preservados)
-    document.getElementById('viewGuionContenido').textContent = guion.contenido || 'Sin contenido';
+    // Mostrar contenido completo en formato tabla
+    const contenidoDiv = document.getElementById('viewGuionContenido');
+    if (guion.contenido) {
+        try {
+            const data = JSON.parse(guion.contenido);
+            const formato = guion.formato || 'Carrusel';
+
+            let tableHTML = '<table class="script-editor-table" style="margin-top: 12px;"><thead><tr>';
+
+            if (formato === 'Carrusel') {
+                tableHTML += '<th>Slide</th><th>Imagen</th><th>Descripción</th><th>Texto</th>';
+            } else {
+                tableHTML += '<th>Escena</th><th>Plano</th><th>Descripción</th><th>Diálogo</th><th>Audio</th>';
+            }
+
+            tableHTML += '</tr></thead><tbody>';
+
+            data.forEach(row => {
+                tableHTML += '<tr>';
+                if (formato === 'Carrusel') {
+                    tableHTML += `<td>${row.slide || ''}</td>`;
+                    tableHTML += `<td>${row.imagen || ''}</td>`;
+                    tableHTML += `<td>${row.descripcion || ''}</td>`;
+                    tableHTML += `<td>${row.texto || ''}</td>`;
+                } else {
+                    tableHTML += `<td>${row.escena || ''}</td>`;
+                    tableHTML += `<td>${row.plano || ''}</td>`;
+                    tableHTML += `<td>${row.descripcion || ''}</td>`;
+                    tableHTML += `<td>${row.dialogo || ''}</td>`;
+                    tableHTML += `<td>${row.audio || ''}</td>`;
+                }
+                tableHTML += '</tr>';
+            });
+
+            tableHTML += '</tbody></table>';
+            contenidoDiv.innerHTML = tableHTML;
+        } catch (e) {
+            console.error('Error al parsear contenido:', e);
+            contenidoDiv.textContent = guion.contenido || 'Sin contenido';
+        }
+    } else {
+        contenidoDiv.textContent = 'Sin contenido';
+    }
 
     // Mostrar notas
     document.getElementById('viewGuionNotas').textContent = guion.notas || 'Sin notas';
@@ -952,9 +1008,17 @@ function editGuion(id) {
     editingGuionId = id;
 
     document.getElementById('guionFecha').value = guion.fecha;
-    document.getElementById('guionFormato').value = guion.formato || 'Carrusel';
+    const formato = guion.formato || 'Carrusel';
+    document.getElementById('guionFormato').value = formato;
     document.getElementById('guionTitulo').value = guion.titulo;
-    document.getElementById('guionContenido').value = guion.contenido;
+
+    // Inicializar el editor con el formato correcto
+    initScriptEditor(formato);
+
+    // Deserializar y cargar los datos del script
+    if (guion.contenido) {
+        deserializeScriptData(formato, guion.contenido);
+    }
 
     // Marcar checkboxes
     const plataformas = guion.plataformas || (guion.plataforma ? [guion.plataforma] : []);
@@ -1007,7 +1071,187 @@ function resetGuionForm() {
 
     document.getElementById('guionEstado').value = 'Idea';
     document.getElementById('guionNotas').value = '';
+
+    // Inicializar editor de script
+    initScriptEditor('Carrusel');
 }
+
+// ============================================
+// DYNAMIC SCRIPT EDITOR
+// ============================================
+
+// Inicializar el editor de script
+function initScriptEditor(formato) {
+    const container = document.getElementById('scriptEditorContainer');
+
+    if (formato === 'Carrusel') {
+        container.innerHTML = `
+            <table class="script-editor-table">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">Slide</th>
+                        <th style="width: 25%;">Imagen</th>
+                        <th style="width: 35%;">Descripción de la imagen</th>
+                        <th style="width: 25%;">Texto sobre la imagen</th>
+                        <th style="width: 5%;"></th>
+                    </tr>
+                </thead>
+                <tbody id="scriptTableBody">
+                    <!-- Las filas se agregarán dinámicamente -->
+                </tbody>
+            </table>
+        `;
+    } else if (formato === 'Reel') {
+        container.innerHTML = `
+            <table class="script-editor-table">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">N° Escena</th>
+                        <th style="width: 15%;">Plano</th>
+                        <th style="width: 30%;">Descripción del video</th>
+                        <th style="width: 25%;">Diálogo</th>
+                        <th style="width: 15%;">Descripción del audio</th>
+                        <th style="width: 5%;"></th>
+                    </tr>
+                </thead>
+                <tbody id="scriptTableBody">
+                    <!-- Las filas se agregarán dinámicamente -->
+                </tbody>
+            </table>
+        `;
+    }
+
+    // Agregar primera fila por defecto
+    addScriptRow(formato);
+}
+
+// Agregar una fila al script
+function addScriptRow(formato, data = null) {
+    const tbody = document.getElementById('scriptTableBody');
+    const row = document.createElement('tr');
+
+    if (formato === 'Carrusel') {
+        row.innerHTML = `
+            <td><input type="text" placeholder="1" value="${data?.slide || ''}" /></td>
+            <td><textarea placeholder="Descripción de imagen..." rows="2">${data?.imagen || ''}</textarea></td>
+            <td><textarea placeholder="Descripción detallada..." rows="2">${data?.descripcion || ''}</textarea></td>
+            <td><textarea placeholder="Texto overlay..." rows="2">${data?.texto || ''}</textarea></td>
+            <td>
+                <button type="button" class="btn-delete-row" onclick="deleteScriptRow(this)" title="Eliminar fila">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </td>
+        `;
+    } else if (formato === 'Reel') {
+        row.innerHTML = `
+            <td><input type="text" placeholder="1" value="${data?.escena || ''}" /></td>
+            <td><input type="text" placeholder="Plano general..." value="${data?.plano || ''}" /></td>
+            <td><textarea placeholder="Descripción del video..." rows="2">${data?.descripcion || ''}</textarea></td>
+            <td><textarea placeholder="Diálogo o voz en off..." rows="2">${data?.dialogo || ''}</textarea></td>
+            <td><textarea placeholder="Música, efectos..." rows="2">${data?.audio || ''}</textarea></td>
+            <td>
+                <button type="button" class="btn-delete-row" onclick="deleteScriptRow(this)" title="Eliminar fila">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </td>
+        `;
+    }
+
+    tbody.appendChild(row);
+}
+
+// Eliminar una fila del script
+function deleteScriptRow(button) {
+    const row = button.closest('tr');
+    const tbody = row.parentElement;
+
+    // No permitir eliminar si es la última fila
+    if (tbody.children.length <= 1) {
+        alert('Debe haber al menos una fila en el guión');
+        return;
+    }
+
+    row.remove();
+}
+
+// Serializar datos del script a JSON
+function serializeScriptData(formato) {
+    const tbody = document.getElementById('scriptTableBody');
+    const rows = tbody.querySelectorAll('tr');
+    const data = [];
+
+    rows.forEach(row => {
+        const inputs = row.querySelectorAll('input, textarea');
+
+        if (formato === 'Carrusel') {
+            data.push({
+                slide: inputs[0].value,
+                imagen: inputs[1].value,
+                descripcion: inputs[2].value,
+                texto: inputs[3].value
+            });
+        } else if (formato === 'Reel') {
+            data.push({
+                escena: inputs[0].value,
+                plano: inputs[1].value,
+                descripcion: inputs[2].value,
+                dialogo: inputs[3].value,
+                audio: inputs[4].value
+            });
+        }
+    });
+
+    return JSON.stringify(data);
+}
+
+// Deserializar datos del script desde JSON
+function deserializeScriptData(formato, jsonData) {
+    try {
+        const data = JSON.parse(jsonData);
+        const tbody = document.getElementById('scriptTableBody');
+        tbody.innerHTML = ''; // Limpiar filas existentes
+
+        if (data && data.length > 0) {
+            data.forEach(rowData => {
+                addScriptRow(formato, rowData);
+            });
+        } else {
+            // Si no hay datos, agregar una fila vacía
+            addScriptRow(formato);
+        }
+    } catch (e) {
+        console.error('Error al deserializar datos del script:', e);
+        // En caso de error, agregar una fila vacía
+        addScriptRow(formato);
+    }
+}
+
+// Evento: Cambio de formato
+document.addEventListener('DOMContentLoaded', () => {
+    const formatoSelect = document.getElementById('guionFormato');
+    if (formatoSelect) {
+        formatoSelect.addEventListener('change', (e) => {
+            const formato = e.target.value;
+            initScriptEditor(formato);
+        });
+    }
+
+    // Evento: Añadir fila
+    const addRowBtn = document.getElementById('addRowBtn');
+    if (addRowBtn) {
+        addRowBtn.addEventListener('click', () => {
+            const formato = document.getElementById('guionFormato').value;
+            addScriptRow(formato);
+        });
+    }
+});
+
 
 // Permitir login con Enter
 document.addEventListener('keypress', (e) => {
