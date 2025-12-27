@@ -240,9 +240,10 @@ function showWorkspaceSelector() {
     buttonsContainer.innerHTML = '';
 
     // Filtrar workspaces a los que el usuario tiene acceso
-    const accessibleWorkspaces = workspaces.filter(ws =>
-        currentUser.canAccess.includes(ws.name)
-    );
+    // Si es admin, mostrar todos. Si es cliente, filtrar por permisos.
+    const accessibleWorkspaces = currentUser.role === 'admin'
+        ? workspaces
+        : workspaces.filter(ws => currentUser.canAccess.includes(ws.name));
 
     // Crear botones dinámicamente
     accessibleWorkspaces.forEach(ws => {
