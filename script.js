@@ -948,11 +948,11 @@ function initializeUserModals() {
 }
 
 // Renderizar lista de usuarios
-function renderUsersList() {
+async function renderUsersList() {
     const usersList = document.getElementById('usersList');
-    const users = getUsersFromStorage();
+    const users = await getUsersFromStorage();
 
-    if (Object.keys(users).length === 0) {
+    if (!users || Object.keys(users).length === 0) {
         usersList.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 20px;">No hay usuarios registrados</p>';
         return;
     }
@@ -990,7 +990,7 @@ function renderUsersList() {
 }
 
 // Guardar nuevo usuario
-function saveNewUser() {
+async function saveNewUser() {
     const email = document.getElementById('newUserEmail').value.trim();
     const password = document.getElementById('newUserPassword').value;
     const name = document.getElementById('newUserName').value.trim();
@@ -1012,30 +1012,31 @@ function saveNewUser() {
         return;
     }
 
-    const users = getUsersFromStorage();
+    const users = await getUsersFromStorage();
 
     if (users[email]) {
         alert('Ya existe un usuario con ese email');
         return;
     }
 
-    users[email] = {
+    const newUser = {
+        email,
         password,
         role,
         name,
         canAccess
     };
 
-    saveUsersToStorage(users);
+    await saveUsersToStorage(users, newUser);
 
     document.getElementById('addUserModal').classList.remove('active');
-    renderUsersList();
+    await renderUsersList();
 
     alert('Usuario creado exitosamente');
 }
 
 // Eliminar usuario
-function deleteUser(email) {
+async function deleteUser(email) {
     if (email === 'asgrmillo@gmail.com') {
         alert('No puedes eliminar el usuario administrador principal');
         return;
@@ -1045,11 +1046,14 @@ function deleteUser(email) {
         return;
     }
 
-    const users = getUsersFromStorage();
-    delete users[email];
-    saveUsersToStorage(users);
-
-    renderUsersList();
+    try {
+        await fetch(`/api/data?action=deleteUser&targetEmail=${email}`, {
+            method: 'DELETE'
+        });
+        await renderUsersList();
+    } catch (e) {
+        console.error("Error al eliminar usuario:", e);
+    }
 }
 
 
