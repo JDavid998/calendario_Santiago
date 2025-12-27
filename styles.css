@@ -658,7 +658,7 @@ textarea {
 }
 
 .day-cell.has-note .day-number {
-    color: #A22122;
+    color: #FFFFFF;
     /* Color del número del día */
 }
 
@@ -673,7 +673,7 @@ textarea {
 }
 
 .day-cell.has-guion .day-number {
-    color: #407684;
+    color: #FFFFFF;
 }
 
 .day-guiones {
