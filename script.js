@@ -520,6 +520,10 @@ function initializeModals() {
             addScriptRow(formato);
         });
     }
+
+    // Inicializar modales de gestión de usuarios y calendarios
+    initializeUserModals();
+    initializeWorkspaceModals();
 }
 
 // Renderizar calendario
