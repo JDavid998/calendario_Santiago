@@ -1458,13 +1458,13 @@ async function renderUsersList() {
 }
 
 // Guardar nuevo usuario
-async function saveNewUser() {
+window.saveNewUser = async function () {
+    console.log('💾 [USER] Intentando guardar usuario...');
     const email = document.getElementById('newUserEmail').value.trim();
     const password = document.getElementById('newUserPassword').value;
     const name = document.getElementById('newUserName').value.trim();
     const role = document.getElementById('newUserRole').value;
-    const accessPersonal = document.getElementById('accessPersonal').checked;
-    const accessMaacline = document.getElementById('accessMaacline').checked;
+
 
     if (!email || !password || !name) {
         alert('Por favor completa todos los campos obligatorios');
