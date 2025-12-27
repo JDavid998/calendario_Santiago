@@ -1019,6 +1019,9 @@ function viewGuion(id) {
     // Mostrar notas
     document.getElementById('viewGuionNotas').textContent = guion.notas || 'Sin notas';
 
+    // Cerrar todos los modales antes de abrir este
+    closeAllModals();
+
     // Abrir modal
     console.log('✅ [VIEW] Abriendo modal de vista');
     const viewModal = document.getElementById('viewGuionModal');
