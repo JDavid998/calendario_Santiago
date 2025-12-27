@@ -1412,8 +1412,7 @@ function initializeUserModals() {
         openModal('addUserModal');
     });
 
-    // Guardar usuario
-    document.getElementById('saveUserBtn').addEventListener('click', saveNewUser);
+
 }
 
 // Renderizar lista de usuarios
