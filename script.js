@@ -922,24 +922,6 @@ async function saveGuion() {
     }
 }
 
-// Ver guión (Detalles)
-function viewGuion(id) {
-    const guion = guiones.find(g => g.id === id);
-    if (!guion) return;
-
-    document.getElementById('viewGuionTitle').textContent = guion.titulo;
-    document.getElementById('viewGuionFecha').textContent = formatDate(guion.fecha);
-
-    const platText = Array.isArray(guion.plataformas) ? guion.plataformas.join(', ') : (guion.plataforma || 'No especificada');
-    document.getElementById('viewGuionPlataformas').textContent = platText;
-
-    document.getElementById('viewGuionEstado').innerHTML = `<span class="status-badge ${getStatusClass(guion.estado)}">${guion.estado}</span>`;
-    document.getElementById('viewGuionContenido').textContent = guion.contenido || 'Sin contenido';
-    document.getElementById('viewGuionNotas').textContent = guion.notas || 'Sin notas adicionales';
-
-    document.getElementById('viewGuionModal').classList.add('active');
-}
-
 // Ver guión (solo lectura)
 function viewGuion(id) {
     const guion = guiones.find(g => g.id === id);
