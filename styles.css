@@ -1029,17 +1029,23 @@ textarea {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.7);
-    z-index: 1000;
+    z-index: 9999;
+    /* Z-index alto por defecto */
     animation: fadeIn 0.3s ease;
+    overflow-y: auto;
+    /* Permitir scroll en el backdrop si el contenido es muy alto */
+    padding: 20px 0;
+    /* Espacio vertical */
 }
 
 .modal.active {
     display: flex !important;
-    align-items: center;
+    align-items: flex-start;
+    /* Alineado arriba para evitar cortes si es muy alto */
     justify-content: center;
-    padding: 20px;
-    z-index: 9999;
-    /* Asegurar que esté por encima de todo */
+    padding-top: 50px;
+    /* Margen superior visual */
+    padding-bottom: 50px;
 }
 
 .modal-content {
