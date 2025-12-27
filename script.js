@@ -501,6 +501,24 @@ function initializeModals() {
             viewGuionModal.classList.remove('active');
         }
     });
+
+    // Eventos del editor de script
+    const formatoSelect = document.getElementById('guionFormato');
+    if (formatoSelect) {
+        formatoSelect.addEventListener('change', (e) => {
+            const formato = e.target.value;
+            initScriptEditor(formato);
+        });
+    }
+
+    // Evento: Añadir fila
+    const addRowBtn = document.getElementById('addRowBtn');
+    if (addRowBtn) {
+        addRowBtn.addEventListener('click', () => {
+            const formato = document.getElementById('guionFormato').value;
+            addScriptRow(formato);
+        });
+    }
 }
 
 // Renderizar calendario
@@ -730,7 +748,7 @@ async function deleteSingleNote(noteId) {
 
 // Renderizar tabla de guiones
 function renderGuiones() {
-    const tbody = document.getElementById('guionesTableBody');
+    const grid = document.getElementById('guionesGrid');
     const filterMonth = document.getElementById('filterMonth').value;
 
     // Controlar visibilidad del botón de agregar guión
@@ -739,7 +757,7 @@ function renderGuiones() {
         addGuionBtn.style.display = currentUser.role === 'client' ? 'none' : 'flex';
     }
 
-    tbody.innerHTML = '';
+    grid.innerHTML = '';
 
     // Filtrar guiones
     let filteredGuiones = guiones;
@@ -755,11 +773,9 @@ function renderGuiones() {
     filteredGuiones.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
     if (filteredGuiones.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-            <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-light);">
+        grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
                 No hay guiones para mostrar. ${currentUser.role !== 'client' ? '¡Haz clic en "Nuevo Guión" para empezar!' : ''}
-            </td>
             </div>
             `;
         return;
@@ -1231,27 +1247,6 @@ function deserializeScriptData(formato, jsonData) {
         addScriptRow(formato);
     }
 }
-
-// Evento: Cambio de formato
-document.addEventListener('DOMContentLoaded', () => {
-    const formatoSelect = document.getElementById('guionFormato');
-    if (formatoSelect) {
-        formatoSelect.addEventListener('change', (e) => {
-            const formato = e.target.value;
-            initScriptEditor(formato);
-        });
-    }
-
-    // Evento: Añadir fila
-    const addRowBtn = document.getElementById('addRowBtn');
-    if (addRowBtn) {
-        addRowBtn.addEventListener('click', () => {
-            const formato = document.getElementById('guionFormato').value;
-            addScriptRow(formato);
-        });
-    }
-});
-
 
 // Permitir login con Enter
 document.addEventListener('keypress', (e) => {
