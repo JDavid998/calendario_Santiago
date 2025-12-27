@@ -25,6 +25,7 @@ let workspaces = []; // Lista de calendarios disponibles
 
 // Inicializar la aplicación
 document.addEventListener('DOMContentLoaded', () => {
+    initializeModals(); // Inicializar eventos una sola vez
     checkAuthentication();
 });
 
@@ -308,7 +309,7 @@ async function initializeApp() {
     await loadData();
     initializeControls();
     initializeTabs();
-    initializeModals();
+    // initializeModals(); // ELIMINADO: Ya se inicializa al cargar la página
     renderCalendar();
     renderGuiones();
     setCurrentMonthYear();

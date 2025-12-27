@@ -1034,10 +1034,12 @@ textarea {
 }
 
 .modal.active {
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     padding: 20px;
+    z-index: 9999;
+    /* Asegurar que esté por encima de todo */
 }
 
 .modal-content {
