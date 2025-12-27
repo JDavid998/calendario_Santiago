@@ -223,7 +223,8 @@ async function loadWorkspaces() {
 function checkWorkspace() {
     const savedWorkspace = sessionStorage.getItem('currentWorkspace');
 
-    if (savedWorkspace && currentUser.canAccess.includes(savedWorkspace)) {
+    // Admin tiene acceso siempre, o verificar permisos del usuario
+    if (savedWorkspace && (currentUser.role === 'admin' || currentUser.canAccess.includes(savedWorkspace))) {
         currentWorkspace = savedWorkspace;
         initializeApp();
     } else {
@@ -277,7 +278,7 @@ function showWorkspaceSelector() {
 
 // Seleccionar workspace
 function selectWorkspace(workspace) {
-    if (!currentUser.canAccess.includes(workspace)) {
+    if (currentUser.role !== 'admin' && !currentUser.canAccess.includes(workspace)) {
         alert('No tienes acceso a este calendario');
         return;
     }
