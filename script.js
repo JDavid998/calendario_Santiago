@@ -1,4 +1,4 @@
-// ============================================
+ï»¿// ============================================
 // SISTEMA DE AUTENTICACIÃ“N Y ROLES
 // ============================================
 
@@ -1156,12 +1156,11 @@ async function deleteUser(email) {
 }
 
 
-
 // ============================================
-// GESTIÓN DE CALENDARIOS (SOLO ADMIN)
+// GESTIÃ“N DE CALENDARIOS (SOLO ADMIN)
 // ============================================
 
-// Mostrar modal de gestión de calendarios
+// Mostrar modal de gestiÃ³n de calendarios
 function showWorkspaceManagement() {
     if (currentUser.role !== 'admin') {
         alert('No tienes permisos para gestionar calendarios');
@@ -1178,7 +1177,7 @@ function initializeWorkspaceModals() {
     const workspaceMgmtModal = document.getElementById('workspaceManagementModal');
     const addWorkspaceModal = document.getElementById('addWorkspaceModal');
 
-    // Cerrar modal de gestión
+    // Cerrar modal de gestiÃ³n
     const closeMgmtBtns = workspaceMgmtModal.querySelectorAll('.modal-close-workspaces');
     closeMgmtBtns.forEach(btn => {
         btn.onclick = () => {
@@ -1194,7 +1193,7 @@ function initializeWorkspaceModals() {
         };
     });
 
-    // Botón agregar calendario
+    // BotÃ³n agregar calendario
     document.getElementById('addWorkspaceBtn').onclick = () => {
         document.getElementById('newWorkspaceName').value = '';
         document.getElementById('newWorkspaceDisplayName').value = '';
@@ -1220,25 +1219,25 @@ function renderWorkspacesList() {
         const isDefault = ws.name === 'personal' || ws.name === 'maacline';
         const deleteBtn = isDefault
             ? ''
-            : <button onclick="deleteWorkspace(+ws.id+)" class="btn-icon btn-delete" style="flex-shrink: 0;">
+            : `<button onclick="deleteWorkspace(${ws.id})" class="btn-icon btn-delete" style="flex-shrink: 0;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="3 6 5 6 21 6"></polyline>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                     </svg>
-                </button>;
+                </button>`;
 
-        html += 
+        html += `
             <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
                 <div style="display: flex; justify-content: space-between; align-items: start;">
                     <div>
-                        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">+ws.display_name+</div>
-                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 4px;">ID: +ws.name+</div>
-                        +(isDefault ? '<div style="font-size: 0.85rem; color: var(--primary-light);">Calendario predeterminado</div>' : '')+
+                        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">${ws.display_name}</div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 4px;">ID: ${ws.name}</div>
+                        ${isDefault ? '<div style="font-size: 0.85rem; color: var(--primary-light);">Calendario predeterminado</div>' : ''}
                     </div>
-                    +deleteBtn+
+                    ${deleteBtn}
                 </div>
             </div>
-        ;
+        `;
     });
 
     html += '</div>';
@@ -1256,8 +1255,8 @@ async function createNewWorkspace() {
     }
 
     // Validar formato del nombre
-    if (!/^[a-z0-9_]+$.test(name)) {
-        alert('El nombre interno solo puede contener letras minúsculas, números y guiones bajos');
+    if (!/^[a-z0-9_]+$/.test(name)) {
+        alert('El nombre interno solo puede contener letras minÃºsculas, nÃºmeros y guiones bajos');
         return;
     }
 
@@ -1285,12 +1284,12 @@ async function createNewWorkspace() {
 
 // Eliminar calendario
 async function deleteWorkspace(id) {
-    if (!confirm('¿Estás seguro de que quieres eliminar este calendario? Todos los datos asociados se perderán.')) {
+    if (!confirm('Â¿EstÃ¡s seguro de que quieres eliminar este calendario? Todos los datos asociados se perderÃ¡n.')) {
         return;
     }
 
     try {
-        const response = await fetch(/api/data?action=deleteWorkspace&workspaceId=+id, {
+        const response = await fetch(`/api/data?action=deleteWorkspace&workspaceId=${id}`, {
             method: 'DELETE'
         });
 
@@ -1316,20 +1315,20 @@ function renderUserCalendarsCheckboxes() {
     workspaces.forEach(ws => {
         const label = document.createElement('label');
         label.style.cssText = 'display: flex; align-items: center; gap: 8px;';
-        
+
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.value = ws.name;
-        checkbox.id = ccess_+ws.name;
-        
+        checkbox.id = `access_${ws.name}`;
+
         // Marcar MAAC Line por defecto
         if (ws.name === 'maacline') {
             checkbox.checked = true;
         }
-        
+
         const span = document.createElement('span');
         span.textContent = ws.display_name;
-        
+
         label.appendChild(checkbox);
         label.appendChild(span);
         container.appendChild(label);
