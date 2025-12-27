@@ -531,6 +531,19 @@ function initializeModals() {
     }
 }
 
+// Función helper para cerrar todos los modales
+function closeAllModals() {
+    console.log('🚪 [MODALS] Cerrando todos los modales abiertos');
+    const allModals = document.querySelectorAll('.modal');
+    allModals.forEach(modal => {
+        if (modal.classList.contains('active')) {
+            console.log('  - Cerrando modal:', modal.id);
+            modal.classList.remove('active');
+        }
+    });
+}
+
+
 // Renderizar calendario
 function renderCalendar() {
     const calendarGrid = document.querySelector('.calendar-grid');
@@ -1058,6 +1071,9 @@ function editGuion(id) {
     document.getElementById('guionEstado').value = guion.estado;
     document.getElementById('guionNotas').value = guion.notas;
 
+    // Cerrar todos los modales antes de abrir este
+    closeAllModals();
+
     document.getElementById('guionModalTitle').textContent = 'Editar Guión';
     document.getElementById('guionModal').classList.add('active');
 }
@@ -1284,6 +1300,10 @@ function showUserManagement() {
 
     console.log('👥 [USER-MGMT] Renderizando lista de usuarios...');
     renderUsersList();
+
+    // Cerrar todos los modales antes de abrir este
+    closeAllModals();
+
     console.log('👥 [USER-MGMT] Abriendo modal...');
     const userModal = document.getElementById('userManagementModal');
     userModal.classList.add('active');
@@ -1482,6 +1502,10 @@ function showWorkspaceManagement() {
 
     console.log('📅 [WORKSPACE-MGMT] Renderizando lista de calendarios...');
     renderWorkspacesList();
+
+    // Cerrar todos los modales antes de abrir este
+    closeAllModals();
+
     console.log('📅 [WORKSPACE-MGMT] Abriendo modal...');
     document.getElementById('workspaceManagementModal').classList.add('active');
 
