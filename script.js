@@ -58,6 +58,12 @@ async function processLogin() {
 
     try {
         const response = await fetch('/api/data?action=getUsers');
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || 'Error del servidor');
+        }
+
         const usersList = await response.json();
 
         // Convertir array de DB a objeto para compatibilidad
@@ -88,7 +94,7 @@ async function processLogin() {
         checkWorkspace();
     } catch (e) {
         console.error("Error en login:", e);
-        errorMsg.textContent = 'Error al conectar con el servidor';
+        errorMsg.textContent = 'Error: ' + e.message + '. (Si estás en local, usa el link de Vercel)';
         errorMsg.style.display = 'block';
     }
 }

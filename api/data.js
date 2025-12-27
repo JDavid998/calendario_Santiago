@@ -1,6 +1,10 @@
 import { neon } from '@neondatabase/serverless';
 
 export default async function handler(req, res) {
+    if (!process.env.DATABASE_URL) {
+        return res.status(500).json({ error: 'Falta la variable DATABASE_URL en Vercel. Configúrala en Settings > Environment Variables.' });
+    }
+
     const sql = neon(process.env.DATABASE_URL);
 
     // Configurar CORS
