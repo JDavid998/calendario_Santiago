@@ -6,10 +6,10 @@
 }
 
 @font-face {
-    font-family: 'Achemost';
-    src: url('Achemost.otf') format('opentype');
-    font-weight: Light;
-    font-style: Light;
+    font-family: 'Rufina';
+    src: url('Rufina-Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
 }
 
 :root {
@@ -49,7 +49,7 @@
 }
 
 body {
-    font-family: 'Achemost', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Rufina', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--bg-primary);
     min-height: 100vh;
     color: var(--text-primary);
