@@ -299,32 +299,7 @@ function updateWorkspaceTitle() {
     document.getElementById('workspaceName').textContent = workspaceName;
 }
 
-// Cargar datos del localStorage
-function loadData() {
-    try {
-        const savedNotes = localStorage.getItem(`calendarNotes_${currentWorkspace}`);
-        const savedGuiones = localStorage.getItem(`guiones_${currentWorkspace}`);
 
-        calendarNotes = savedNotes ? JSON.parse(savedNotes) : {};
-        guiones = savedGuiones ? JSON.parse(savedGuiones) : [];
-
-        // Asegurar que guiones sea un array
-        if (!Array.isArray(guiones)) guiones = [];
-        // Asegurar que calendarNotes sea un objeto
-        if (typeof calendarNotes !== 'object' || Array.isArray(calendarNotes)) calendarNotes = {};
-
-    } catch (e) {
-        console.error("Error al cargar datos:", e);
-        calendarNotes = {};
-        guiones = [];
-    }
-}
-
-// Guardar datos en localStorage
-function saveData() {
-    localStorage.setItem(`calendarNotes_${currentWorkspace}`, JSON.stringify(calendarNotes));
-    localStorage.setItem(`guiones_${currentWorkspace}`, JSON.stringify(guiones));
-}
 
 // Establecer mes y año actual en los controles
 function setCurrentMonthYear() {
@@ -496,7 +471,6 @@ function renderCalendar() {
         if (typeof notes === 'string') {
             notes = [{ id: Date.now(), text: notes, author: 'Sistema' }];
             calendarNotes[dateKey] = notes;
-            saveData();
         } else if (!Array.isArray(notes)) {
             notes = [];
         }
