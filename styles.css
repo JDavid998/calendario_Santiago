@@ -653,12 +653,12 @@ textarea {
 }
 
 .day-cell.has-note {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-    border-color: var(--primary-color);
+    background: linear-gradient(135deg, rgba(85, 156, 173, 0.1) 0%, rgba(85, 156, 173, 0.2) 100%);
+    border-color: #559CAD;
 }
 
 .day-cell.has-note .day-number {
-    color: var(--primary-light);
+    color: #559CAD;
 }
 
 .day-cell.has-note .day-note {
@@ -666,12 +666,12 @@ textarea {
 }
 
 .day-cell.has-guion {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%);
-    border-color: var(--accent-color);
+    background: linear-gradient(135deg, rgba(64, 118, 132, 0.1) 0%, rgba(64, 118, 132, 0.2) 100%);
+    border-color: #407684;
 }
 
 .day-cell.has-guion .day-number {
-    color: var(--accent-light);
+    color: #407684;
 }
 
 .day-guiones {
@@ -686,13 +686,13 @@ textarea {
     gap: 6px;
     margin-bottom: 4px;
     padding: 4px;
-    background: rgba(139, 92, 246, 0.1);
+    background: rgba(64, 118, 132, 0.1);
     border-radius: 4px;
-    border-left: 2px solid var(--accent-color);
+    border-left: 2px solid #407684;
 }
 
 .guion-bullet {
-    color: var(--accent-color);
+    color: #407684;
     font-weight: bold;
     flex-shrink: 0;
 }
