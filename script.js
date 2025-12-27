@@ -1008,7 +1008,15 @@ function viewGuion(id) {
 
     // Abrir modal
     console.log('✅ [VIEW] Abriendo modal de vista');
-    document.getElementById('viewGuionModal').classList.add('active');
+    const viewModal = document.getElementById('viewGuionModal');
+    viewModal.classList.add('active');
+
+    // Verificar estado del modal
+    console.log('🔍 [VIEW] Estado del modal después de agregar clase active:');
+    console.log('  - Tiene clase active:', viewModal.classList.contains('active'));
+    console.log('  - Display style:', window.getComputedStyle(viewModal).display);
+    console.log('  - Z-index:', window.getComputedStyle(viewModal).zIndex);
+    console.log('  - Visibility:', window.getComputedStyle(viewModal).visibility);
 }
 
 // Editar guión
@@ -1277,7 +1285,15 @@ function showUserManagement() {
     console.log('👥 [USER-MGMT] Renderizando lista de usuarios...');
     renderUsersList();
     console.log('👥 [USER-MGMT] Abriendo modal...');
-    document.getElementById('userManagementModal').classList.add('active');
+    const userModal = document.getElementById('userManagementModal');
+    userModal.classList.add('active');
+
+    // Verificar estado del modal
+    console.log('🔍 [USER-MGMT] Estado del modal después de agregar clase active:');
+    console.log('  - Tiene clase active:', userModal.classList.contains('active'));
+    console.log('  - Display style:', window.getComputedStyle(userModal).display);
+    console.log('  - Z-index:', window.getComputedStyle(userModal).zIndex);
+    console.log('  - Visibility:', window.getComputedStyle(userModal).visibility);
 
     // Inicializar modales solo la primera vez
     if (!window.userModalsInitialized) {
