@@ -45,7 +45,7 @@ function showLoginScreen() {
 }
 
 // Procesar login
-function processLogin() {
+async function processLogin() {
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value;
     const errorMsg = document.getElementById('loginError');
@@ -56,35 +56,83 @@ function processLogin() {
         return;
     }
 
-    const users = getUsersFromStorage();
-    const user = users[username];
+    try {
+        const response = await fetch('/api/data?action=getUsers');
+        const usersList = await response.json();
 
-    if (!user || user.password !== password) {
-        errorMsg.textContent = 'Usuario o contraseña incorrectos';
+        // Convertir array de DB a objeto para compatibilidad
+        const users = {};
+        usersList.forEach(u => {
+            users[u.email] = {
+                password: u.password,
+                role: u.role,
+                name: u.name,
+                canAccess: u.can_access || []
+            };
+        });
+
+        const user = users[username];
+
+        if (!user || user.password !== password) {
+            errorMsg.textContent = 'Usuario o contraseña incorrectos';
+            errorMsg.style.display = 'block';
+            return;
+        }
+
+        // Login exitoso
+        currentUser = user;
+        currentUser.email = username; // Guardar email para referencia
+        sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+        document.getElementById('loginScreen').classList.remove('active');
+        checkWorkspace();
+    } catch (e) {
+        console.error("Error en login:", e);
+        errorMsg.textContent = 'Error al conectar con el servidor';
         errorMsg.style.display = 'block';
-        return;
     }
-
-    // Login exitoso
-    currentUser = user;
-    sessionStorage.setItem('currentUser', JSON.stringify(user));
-
-    document.getElementById('loginScreen').classList.remove('active');
-    checkWorkspace();
 }
 
-// Obtener usuarios del localStorage
-function getUsersFromStorage() {
-    const stored = localStorage.getItem('appUsers');
-    if (stored) {
-        return JSON.parse(stored);
+// Obtener usuarios del servidor
+async function getUsersFromStorage() {
+    try {
+        const response = await fetch('/api/data?action=getUsers');
+        const usersList = await response.json();
+        const users = {};
+        usersList.forEach(u => {
+            users[u.email] = {
+                password: u.password,
+                role: u.role,
+                name: u.name,
+                canAccess: u.can_access || []
+            };
+        });
+        return users;
+    } catch (e) {
+        console.error("Error al cargar usuarios:", e);
+        return USERS;
     }
-    return USERS;
 }
 
-// Guardar usuarios en localStorage
-function saveUsersToStorage(users) {
-    localStorage.setItem('appUsers', JSON.stringify(users));
+// Guardar usuario en el servidor
+async function saveUsersToStorage(users, newUser = null) {
+    if (!newUser) return; // En este nuevo sistema guardamos de a uno
+
+    try {
+        await fetch('/api/data?action=saveUser', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: newUser.email,
+                password: newUser.password,
+                role: newUser.role,
+                name: newUser.name,
+                can_access: newUser.canAccess
+            })
+        });
+    } catch (e) {
+        console.error("Error al guardar usuario:", e);
+    }
 }
 
 // Cerrar sesión
@@ -163,8 +211,8 @@ function changeWorkspace() {
 }
 
 // Inicializar la aplicación
-function initializeApp() {
-    loadData();
+async function initializeApp() {
+    await loadData();
     initializeControls();
     initializeTabs();
     initializeModals();
@@ -176,6 +224,24 @@ function initializeApp() {
 
     // Mostrar el contenedor principal
     document.getElementById('mainContainer').style.display = 'block';
+}
+
+// Cargar datos del servidor
+async function loadData() {
+    try {
+        // Cargar Notas
+        const notesRes = await fetch(`/api/data?action=getNotes&workspace=${currentWorkspace}`);
+        calendarNotes = await notesRes.json();
+
+        // Cargar Guiones
+        const guionesRes = await fetch(`/api/data?action=getGuiones&workspace=${currentWorkspace}`);
+        guiones = await guionesRes.json();
+
+    } catch (e) {
+        console.error("Error al cargar datos de Neon DB:", e);
+        calendarNotes = {};
+        guiones = [];
+    }
 }
 
 // Actualizar información del usuario
@@ -480,7 +546,6 @@ function openDayModal(day) {
     if (typeof notes === 'string') {
         notes = [{ id: Date.now(), text: notes, author: 'Sistema' }];
         calendarNotes[dateKey] = notes;
-        saveData();
     } else if (!Array.isArray(notes)) {
         notes = [];
     }
@@ -535,45 +600,53 @@ function renderModalNotes(notes) {
 }
 
 // Agregar nueva nota
-function addNewNoteToDay(dateKey) {
+async function addNewNoteToDay(dateKey) {
     const input = document.getElementById('newNoteInput');
     const text = input.value.trim();
 
     if (!text) return;
 
-    const newNote = {
-        id: Date.now(),
-        text: text,
-        author: currentUser.name
-    };
+    try {
+        const response = await fetch(`/api/data?action=saveNote&workspace=${currentWorkspace}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                dateKey: dateKey,
+                text: text,
+                author: currentUser.name
+            })
+        });
 
-    if (!calendarNotes[dateKey]) {
-        calendarNotes[dateKey] = [];
+        if (response.ok) {
+            await loadData();
+            renderCalendar();
+            renderModalNotes(calendarNotes[dateKey] || []);
+            input.value = '';
+        }
+    } catch (e) {
+        console.error("Error al guardar nota:", e);
+        alert("Error al guardar nota en el servidor");
     }
-
-    calendarNotes[dateKey].push(newNote);
-    saveData();
-    renderCalendar(); // Actualizar vista calendario
-
-    // Actualizar vista modal
-    renderModalNotes(calendarNotes[dateKey]);
-    input.value = '';
 }
 
 // Eliminar nota individual
-function deleteSingleNote(noteId) {
+async function deleteSingleNote(noteId) {
     const dateKey = `${currentYear}-${currentMonth}-${selectedDay}`;
-    const notes = calendarNotes[dateKey];
 
-    if (notes) {
-        calendarNotes[dateKey] = notes.filter(n => n.id !== noteId);
-        if (calendarNotes[dateKey].length === 0) {
-            delete calendarNotes[dateKey];
+    if (!confirm('¿Estás seguro de eliminar esta nota?')) return;
+
+    try {
+        const response = await fetch(`/api/data?action=deleteNote&noteId=${noteId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            await loadData();
+            renderCalendar();
+            renderModalNotes(calendarNotes[dateKey] || []);
         }
-
-        saveData();
-        renderCalendar();
-        renderModalNotes(calendarNotes[dateKey] || []);
+    } catch (e) {
+        console.error("Error al eliminar nota:", e);
     }
 }
 
@@ -682,20 +755,18 @@ function getStatusClass(estado) {
 }
 
 // Guardar guión
-function saveGuion() {
+async function saveGuion() {
     if (currentUser.role === 'client') return;
 
     const fecha = document.getElementById('guionFecha').value;
     const titulo = document.getElementById('guionTitulo').value.trim();
     const contenido = document.getElementById('guionContenido').value.trim();
 
-    // Obtener plataformas seleccionadas
     const checkboxes = document.querySelectorAll('input[name="plataforma"]:checked');
     const plataformas = Array.from(checkboxes).map(cb => cb.value);
 
     const estado = document.getElementById('guionEstado').value;
     const notas = document.getElementById('guionNotas').value.trim();
-
 
     if (!fecha || !titulo) {
         alert('Por favor completa al menos la fecha y el título');
@@ -703,29 +774,32 @@ function saveGuion() {
     }
 
     const guion = {
-        id: editingGuionId || Date.now(),
+        id: editingGuionId,
         fecha,
         titulo,
         contenido,
-        plataformas: plataformas, // Guardar como array
+        plataformas,
         estado,
         notas
     };
 
-    if (editingGuionId) {
-        const index = guiones.findIndex(g => g.id === editingGuionId);
-        if (index !== -1) {
-            guiones[index] = guion;
-        }
-    } else {
-        guiones.push(guion);
-    }
+    try {
+        const response = await fetch(`/api/data?action=saveGuion&workspace=${currentWorkspace}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(guion)
+        });
 
-    saveData();
-    renderCalendar(); // Actualizar calendario para mostrar el nuevo guión
-    renderGuiones();
-    document.getElementById('guionModal').classList.remove('active');
-    resetGuionForm();
+        if (response.ok) {
+            await loadData();
+            renderCalendar();
+            renderGuiones();
+            document.getElementById('guionModal').classList.remove('active');
+            resetGuionForm();
+        }
+    } catch (e) {
+        console.error("Error al guardar guión:", e);
+    }
 }
 
 // Ver guión (Detalles)
@@ -774,17 +848,26 @@ function editGuion(id) {
 }
 
 // Eliminar guión
-function deleteGuion(id) {
+async function deleteGuion(id) {
     if (currentUser.role === 'client') return;
 
     if (!confirm('¿Estás seguro de que quieres eliminar este guión?')) {
         return;
     }
 
-    guiones = guiones.filter(g => g.id !== id);
-    saveData();
-    renderCalendar(); // Actualizar calendario
-    renderGuiones();
+    try {
+        const response = await fetch(`/api/data?action=deleteGuion&workspace=${currentWorkspace}&guionId=${id}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            await loadData();
+            renderCalendar();
+            renderGuiones();
+        }
+    } catch (e) {
+        console.error("Error al eliminar guión:", e);
+    }
 }
 
 // Resetear formulario de guión
@@ -969,16 +1052,4 @@ function deleteUser(email) {
     renderUsersList();
 }
 
-// Obtener usuarios del localStorage
-function getUsersFromStorage() {
-    const stored = localStorage.getItem('appUsers');
-    if (stored) {
-        return JSON.parse(stored);
-    }
-    return USERS;
-}
 
-// Guardar usuarios en localStorage
-function saveUsersToStorage(users) {
-    localStorage.setItem('appUsers', JSON.stringify(users));
-}

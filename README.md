@@ -102,4 +102,23 @@ El tema visual se controla desde `styles.css` usando variables CSS:
 
 ---
 
+
+## ☁️ Sincronización en la Nube (Neon DB)
+
+Para que el contenido sea visible en cualquier dispositivo, hemos integrado **Neon DB**.
+
+### 1. Configurar la Base de Datos
+- Entra a tu panel de **Neon DB**.
+- Ve al **SQL Editor**.
+- Copia y pega el contenido del archivo `neon_setup.sql` que está en el proyecto y ejecútalo. Esto creará las tablas.
+
+### 2. Configurar Vercel
+- Ve a tu proyecto en **Vercel** > **Settings** > **Environment Variables**.
+- Agrega una nueva variable:
+    - **Key**: `DATABASE_URL`
+    - **Value**: Tu connection string de Neon (la que empieza con `postgresql://...`).
+- **Importante**: Haz un **Redeploy** para que los cambios surtan efecto.
+
+---
+
 **Desarrollado para productividad y gestión de contenido.**
