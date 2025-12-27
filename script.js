@@ -449,7 +449,7 @@ function initializeModals() {
 
     closeBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            dayModal.classList.remove('active');
+            closeModal('dayModal');
         });
     });
 
@@ -464,7 +464,7 @@ function initializeModals() {
 
     closeGuionBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            guionModal.classList.remove('active');
+            closeModal('guionModal');
             resetGuionForm();
         });
     });
@@ -473,7 +473,7 @@ function initializeModals() {
         editingGuionId = null;
         resetGuionForm();
         document.getElementById('guionModalTitle').textContent = 'Nuevo Guión';
-        guionModal.classList.add('active');
+        openModal('guionModal');
     });
 
     saveGuionBtn.addEventListener('click', saveGuion);
@@ -485,13 +485,13 @@ function initializeModals() {
     // Cerrar modal al hacer clic fuera
     dayModal.addEventListener('click', (e) => {
         if (e.target === dayModal) {
-            dayModal.classList.remove('active');
+            closeModal('dayModal');
         }
     });
 
     guionModal.addEventListener('click', (e) => {
         if (e.target === guionModal) {
-            guionModal.classList.remove('active');
+            closeModal('guionModal');
             resetGuionForm();
         }
     });
@@ -502,13 +502,13 @@ function initializeModals() {
 
     closeViewBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            viewGuionModal.classList.remove('active');
+            closeModal('viewGuionModal');
         });
     });
 
     viewGuionModal.addEventListener('click', (e) => {
         if (e.target === viewGuionModal) {
-            viewGuionModal.classList.remove('active');
+            closeModal('viewGuionModal');
         }
     });
 
@@ -531,16 +531,55 @@ function initializeModals() {
     }
 }
 
-// Función helper para cerrar todos los modales
-function closeAllModals() {
-    console.log('🚪 [MODALS] Cerrando todos los modales abiertos');
+
+// ============================================
+// GESTIÓN CENTRALIZADA DE MODALES
+// ============================================
+
+function openModal(modalId) {
+    console.log(`🔓 [MODAL] Intentando abrir modal: ${modalId}`);
+
+    // 1. Cerrar todos los otros modales (fuerza bruta)
     const allModals = document.querySelectorAll('.modal');
-    allModals.forEach(modal => {
-        if (modal.classList.contains('active')) {
-            console.log('  - Cerrando modal:', modal.id);
-            modal.classList.remove('active');
+    allModals.forEach(m => {
+        if (m.id !== modalId) {
+            m.classList.remove('active');
+            m.style.display = 'none';
         }
     });
+
+    // 2. Abrir el modal objetivo
+    const modal = document.getElementById(modalId);
+    if (!modal) {
+        console.error(`❌ [MODAL] No se encontró el modal: ${modalId}`);
+        return;
+    }
+
+    // 3. Forzar estilos directamente para asegurar visibilidad
+    modal.style.display = 'flex';
+    modal.style.zIndex = '9999';
+    modal.style.opacity = '1';
+
+    // 4. Agregar clase active después de un pequeño delay para permitir transiciones (si las hubiera)
+    // pero asegurando que ya es visible
+    requestAnimationFrame(() => {
+        modal.classList.add('active');
+        console.log(`✅ [MODAL] Modal ${modalId} abierto y forzado visible`);
+
+        // Log de diagnóstico final
+        const style = window.getComputedStyle(modal);
+        console.log(`🔍 [MODAL] Estado final: Display=${style.display}, Opacity=${style.opacity}, ZIndex=${style.zIndex}`);
+    });
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300); // Esperar transición
+    }
 }
 
 
@@ -1019,20 +1058,8 @@ function viewGuion(id) {
     // Mostrar notas
     document.getElementById('viewGuionNotas').textContent = guion.notas || 'Sin notas';
 
-    // Cerrar todos los modales antes de abrir este
-    closeAllModals();
-
-    // Abrir modal
-    console.log('✅ [VIEW] Abriendo modal de vista');
-    const viewModal = document.getElementById('viewGuionModal');
-    viewModal.classList.add('active');
-
-    // Verificar estado del modal
-    console.log('🔍 [VIEW] Estado del modal después de agregar clase active:');
-    console.log('  - Tiene clase active:', viewModal.classList.contains('active'));
-    console.log('  - Display style:', window.getComputedStyle(viewModal).display);
-    console.log('  - Z-index:', window.getComputedStyle(viewModal).zIndex);
-    console.log('  - Visibility:', window.getComputedStyle(viewModal).visibility);
+    // Abrir modal con función centralizada
+    openModal('viewGuionModal');
 }
 
 // Editar guión
@@ -1074,11 +1101,10 @@ function editGuion(id) {
     document.getElementById('guionEstado').value = guion.estado;
     document.getElementById('guionNotas').value = guion.notas;
 
-    // Cerrar todos los modales antes de abrir este
-    closeAllModals();
-
     document.getElementById('guionModalTitle').textContent = 'Editar Guión';
-    document.getElementById('guionModal').classList.add('active');
+
+    // Abrir modal con función centralizada
+    openModal('guionModal');
 }
 
 // Eliminar guión
@@ -1304,19 +1330,10 @@ function showUserManagement() {
     console.log('👥 [USER-MGMT] Renderizando lista de usuarios...');
     renderUsersList();
 
-    // Cerrar todos los modales antes de abrir este
-    closeAllModals();
-
     console.log('👥 [USER-MGMT] Abriendo modal...');
-    const userModal = document.getElementById('userManagementModal');
-    userModal.classList.add('active');
 
-    // Verificar estado del modal
-    console.log('🔍 [USER-MGMT] Estado del modal después de agregar clase active:');
-    console.log('  - Tiene clase active:', userModal.classList.contains('active'));
-    console.log('  - Display style:', window.getComputedStyle(userModal).display);
-    console.log('  - Z-index:', window.getComputedStyle(userModal).zIndex);
-    console.log('  - Visibility:', window.getComputedStyle(userModal).visibility);
+    // Abrir modal con función centralizada
+    openModal('userManagementModal');
 
     // Inicializar modales solo la primera vez
     if (!window.userModalsInitialized) {
@@ -1344,7 +1361,7 @@ function initializeUserModals() {
 
     userMgmtModal.addEventListener('click', (e) => {
         if (e.target === userMgmtModal) {
-            userMgmtModal.classList.remove('active');
+            closeModal('userManagementModal');
         }
     });
 
@@ -1358,7 +1375,7 @@ function initializeUserModals() {
 
     addUserModal.addEventListener('click', (e) => {
         if (e.target === addUserModal) {
-            addUserModal.classList.remove('active');
+            closeModal('addUserModal');
         }
     });
 
@@ -1370,7 +1387,7 @@ function initializeUserModals() {
         document.getElementById('newUserName').value = '';
         document.getElementById('newUserRole').value = 'client';
         renderUserCalendarsCheckboxes();
-        addUserModal.classList.add('active');
+        openModal('addUserModal');
     });
 
     // Guardar usuario
@@ -1460,7 +1477,7 @@ async function saveNewUser() {
 
     await saveUsersToStorage(users, newUser);
 
-    document.getElementById('addUserModal').classList.remove('active');
+    closeModal('addUserModal');
     await renderUsersList();
 
     alert('Usuario creado exitosamente');
@@ -1506,11 +1523,10 @@ function showWorkspaceManagement() {
     console.log('📅 [WORKSPACE-MGMT] Renderizando lista de calendarios...');
     renderWorkspacesList();
 
-    // Cerrar todos los modales antes de abrir este
-    closeAllModals();
-
     console.log('📅 [WORKSPACE-MGMT] Abriendo modal...');
-    document.getElementById('workspaceManagementModal').classList.add('active');
+
+    // Abrir modal con función centralizada
+    openModal('workspaceManagementModal');
 
     // Inicializar modales solo la primera vez
     if (!window.workspaceModalsInitialized) {
@@ -1532,13 +1548,13 @@ function initializeWorkspaceModals() {
     const closeMgmtBtns = workspaceMgmtModal.querySelectorAll('.modal-close-workspaces');
     closeMgmtBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            workspaceMgmtModal.classList.remove('active');
+            closeModal('workspaceManagementModal');
         });
     });
 
     workspaceMgmtModal.addEventListener('click', (e) => {
         if (e.target === workspaceMgmtModal) {
-            workspaceMgmtModal.classList.remove('active');
+            closeModal('workspaceManagementModal');
         }
     });
 
@@ -1546,13 +1562,13 @@ function initializeWorkspaceModals() {
     const closeWorkspaceBtns = addWorkspaceModal.querySelectorAll('.modal-close-workspace');
     closeWorkspaceBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            addWorkspaceModal.classList.remove('active');
+            closeModal('addWorkspaceModal');
         });
     });
 
     addWorkspaceModal.addEventListener('click', (e) => {
         if (e.target === addWorkspaceModal) {
-            addWorkspaceModal.classList.remove('active');
+            closeModal('addWorkspaceModal');
         }
     });
 
@@ -1560,7 +1576,7 @@ function initializeWorkspaceModals() {
     document.getElementById('addWorkspaceBtn').addEventListener('click', () => {
         document.getElementById('newWorkspaceName').value = '';
         document.getElementById('newWorkspaceDisplayName').value = '';
-        addWorkspaceModal.classList.add('active');
+        openModal('addWorkspaceModal');
     });
 
     // Guardar calendario
@@ -1633,7 +1649,7 @@ async function createNewWorkspace() {
         if (response.ok) {
             await loadWorkspaces(); // Recargar lista
             renderWorkspacesList();
-            document.getElementById('addWorkspaceModal').classList.remove('active');
+            closeModal('addWorkspaceModal');
             alert('Calendario creado exitosamente');
         } else {
             const error = await response.json();
