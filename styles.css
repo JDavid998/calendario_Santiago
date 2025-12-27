@@ -1050,10 +1050,18 @@ textarea {
     box-shadow: var(--shadow-xl);
     border: 1px solid var(--border-color);
     animation: slideUp 0.3s ease;
-    display: flex;
-    flex-direction: column;
+    display: block;
+    /* Forzar bloque para evitar problemas de flex anidado */
     max-height: 90vh;
-    /* Máxima altura del 90% de la ventana */
+    position: relative;
+    /* Para posicionamiento */
+    overflow: hidden;
+    /* Para respetar bordes redondeados */
+}
+
+/* Forzar repintado en modales activos */
+.modal.active .modal-content {
+    transform: translateZ(0);
 }
 
 .modal-large {
@@ -1096,9 +1104,15 @@ textarea {
 .modal-body {
     padding: 24px;
     overflow-y: auto;
-    /* Scroll vertical si es necesario */
+    /* Asegurar que el scroll funcione sin romper el layout */
+    max-height: calc(90vh - 140px);
+    /* Altura total menos header y footer aprox */
+}
+
+/* Sobreescribir altura si usamos flex container arriba */
+.modal-content.flex-fix .modal-body {
     flex-grow: 1;
-    /* Ocupa el espacio disponible */
+    max-height: none;
 }
 
 .modal-body label {
