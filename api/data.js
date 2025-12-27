@@ -13,18 +13,14 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Configuración incompleta: Falta DATABASE_URL en Vercel.' });
     }
 
-    let connectionString = process.env.DATABASE_URL.trim();
-    // Limpiar comillas que a veces se pegan por error
-    if ((connectionString.startsWith("'") && connectionString.endsWith("'")) ||
-        (connectionString.startsWith('"') && connectionString.endsWith('"'))) {
-        connectionString = connectionString.substring(1, connectionString.length - 1);
-    }
+    // Limpieza agresiva: quitar comillas simples, dobles y espacios al inicio y final
+    const connectionString = process.env.DATABASE_URL.replace(/^['"\s]+|['"\s]+$/g, '');
 
     let sql;
     try {
         sql = neon(connectionString);
     } catch (e) {
-        return res.status(500).json({ error: 'Error al inicializar conexión: ' + e.message });
+        return res.status(500).json({ error: 'Error al inicializar conexión: ' + e.message + ' | URL procesada: ' + connectionString });
     }
 
     const { action, workspace, email } = req.query;
