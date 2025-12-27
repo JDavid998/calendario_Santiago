@@ -384,7 +384,7 @@
             <div class="modal-content modal-large">
                 <div class="modal-header">
                     <h3>Gestión de Usuarios</h3>
-                    <button class="modal-close-users">&times;</button>
+                    <button class="modal-close-users" onclick="closeModal('userManagementModal')">&times;</button>
                 </div>
                 <div class="modal-body">
                     <button id="addUserBtn" class="btn-primary" style="margin-bottom: 20px;">
@@ -398,7 +398,8 @@
                     <div class="users-list" id="usersList"></div>
                 </div>
                 <div class="modal-footer">
-                    <button class="modal-close-users btn-secondary">Cerrar</button>
+                    <button class="modal-close-users btn-secondary"
+                        onclick="closeModal('userManagementModal')">Cerrar</button>
                 </div>
             </div>
         </div>
@@ -448,7 +449,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h3 id="userModalTitle">Nuevo Usuario</h3>
-                    <button class="modal-close-user">&times;</button>
+                    <button class="modal-close-user" onclick="closeModal('addUserModal')">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
@@ -480,7 +481,8 @@
                 </div>
                 <div class="modal-footer">
                     <button id="saveUserBtn" class="btn-primary">Guardar Usuario</button>
-                    <button class="modal-close-user btn-secondary">Cancelar</button>
+                    <button class="modal-close-user btn-secondary"
+                        onclick="closeModal('addUserModal')">Cancelar</button>
                 </div>
             </div>
         </div>
@@ -490,7 +492,8 @@
             <div class="modal-content modal-large">
                 <div class="modal-header">
                     <h3>Gestión de Calendarios</h3>
-                    <button class="modal-close-workspaces">&times;</button>
+                    <button class="modal-close-workspaces"
+                        onclick="closeModal('workspaceManagementModal')">&times;</button>
                 </div>
                 <div class="modal-body">
                     <button id="addWorkspaceBtn" class="btn-primary" style="margin-bottom: 20px;">
@@ -504,7 +507,8 @@
                     <div class="workspaces-list" id="workspacesList"></div>
                 </div>
                 <div class="modal-footer">
-                    <button class="modal-close-workspaces btn-secondary">Cerrar</button>
+                    <button class="modal-close-workspaces btn-secondary"
+                        onclick="closeModal('workspaceManagementModal')">Cerrar</button>
                 </div>
             </div>
         </div>
@@ -514,7 +518,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>Nuevo Calendario</h3>
-                    <button class="modal-close-workspace">&times;</button>
+                    <button class="modal-close-workspace" onclick="closeModal('addWorkspaceModal')">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
@@ -531,7 +535,8 @@
                 </div>
                 <div class="modal-footer">
                     <button id="saveWorkspaceBtn" class="btn-primary">Crear Calendario</button>
-                    <button class="modal-close-workspace btn-secondary">Cancelar</button>
+                    <button class="modal-close-workspace btn-secondary"
+                        onclick="closeModal('addWorkspaceModal')">Cancelar</button>
                 </div>
             </div>
         </div>

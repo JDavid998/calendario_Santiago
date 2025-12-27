@@ -97,20 +97,20 @@ export default async function handler(req, res) {
             const g = req.body;
             if (g.id && g.id > 1700000000000) { // Si es un ID temporal de JS, insertar nuevo
                 await sql`
-                    INSERT INTO guiones (workspace, fecha, titulo, contenido, plataformas, estado, notas)
-                    VALUES (${workspace}, ${g.fecha}, ${g.titulo}, ${g.contenido}, ${g.plataformas}, ${g.estado}, ${g.notas})
+                    INSERT INTO guiones (workspace, fecha, titulo, formato, contenido, plataformas, estado, notas)
+                    VALUES (${workspace}, ${g.fecha}, ${g.titulo}, ${g.formato}, ${g.contenido}, ${g.plataformas}, ${g.estado}, ${g.notas})
                 `;
             } else if (g.id) { // Update
                 await sql`
                     UPDATE guiones 
-                    SET fecha = ${g.fecha}, titulo = ${g.titulo}, contenido = ${g.contenido}, 
+                    SET fecha = ${g.fecha}, titulo = ${g.titulo}, formato = ${g.formato}, contenido = ${g.contenido}, 
                         plataformas = ${g.plataformas}, estado = ${g.estado}, notas = ${g.notas}
                     WHERE id = ${g.id} AND workspace = ${workspace}
                 `;
             } else { // New
                 await sql`
-                    INSERT INTO guiones (workspace, fecha, titulo, contenido, plataformas, estado, notas)
-                    VALUES (${workspace}, ${g.fecha}, ${g.titulo}, ${g.contenido}, ${g.plataformas}, ${g.estado}, ${g.notas})
+                    INSERT INTO guiones (workspace, fecha, titulo, formato, contenido, plataformas, estado, notas)
+                    VALUES (${workspace}, ${g.fecha}, ${g.titulo}, ${g.formato}, ${g.contenido}, ${g.plataformas}, ${g.estado}, ${g.notas})
                 `;
             }
             return res.status(200).json({ success: true });

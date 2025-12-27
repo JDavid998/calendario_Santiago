@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS guiones (
     workspace TEXT NOT NULL,
     fecha DATE NOT NULL,
     titulo TEXT NOT NULL,
+    formato TEXT DEFAULT 'Carrusel', -- Nuevo campo
     contenido TEXT,
     plataformas TEXT[],
     estado TEXT,
