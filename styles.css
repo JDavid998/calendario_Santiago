@@ -654,15 +654,17 @@ textarea {
 
 .day-cell.has-note {
     background: linear-gradient(135deg, rgba(85, 156, 173, 0.1) 0%, rgba(85, 156, 173, 0.2) 100%);
-    border-color: #559CAD;
+    border-color: #A22122;
 }
 
 .day-cell.has-note .day-number {
-    color: #559CAD;
+    color: #A22122;
+    /* Color del número del día */
 }
 
 .day-cell.has-note .day-note {
-    color: var(--text-primary);
+    color: #A22122;
+    /* Color del texto del evento */
 }
 
 .day-cell.has-guion {
