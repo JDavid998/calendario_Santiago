@@ -960,6 +960,10 @@ async function saveGuion() {
     // Serializar datos del script editor
     const contenido = serializeScriptData(formato);
 
+    console.log('💾 [SAVE] Guardando guión...');
+    console.log('  - Formato seleccionado:', formato);
+    console.log('  - Contenido serializado length:', contenido.length);
+
     const checkboxes = document.querySelectorAll('input[name="plataforma"]:checked');
     const plataformas = Array.from(checkboxes).map(cb => cb.value);
 
@@ -990,10 +994,11 @@ async function saveGuion() {
         });
 
         if (response.ok) {
+            console.log('✅ [SAVE] Guión guardado exitosamente');
             await loadData();
             renderCalendar();
             renderGuiones();
-            document.getElementById('guionModal').classList.remove('active');
+            closeModal('guionModal');
             resetGuionForm();
         }
     } catch (e) {
@@ -1386,7 +1391,7 @@ function initializeUserModals() {
     const closeUserBtns = addUserModal.querySelectorAll('.modal-close-user');
     closeUserBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            addUserModal.classList.remove('active');
+            closeModal('addUserModal');
         });
     });
 
