@@ -13,9 +13,16 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Configuración incompleta: Falta DATABASE_URL en Vercel.' });
     }
 
+    let connectionString = process.env.DATABASE_URL.trim();
+    // Limpiar comillas que a veces se pegan por error
+    if ((connectionString.startsWith("'") && connectionString.endsWith("'")) ||
+        (connectionString.startsWith('"') && connectionString.endsWith('"'))) {
+        connectionString = connectionString.substring(1, connectionString.length - 1);
+    }
+
     let sql;
     try {
-        sql = neon(process.env.DATABASE_URL);
+        sql = neon(connectionString);
     } catch (e) {
         return res.status(500).json({ error: 'Error al inicializar conexión: ' + e.message });
     }
