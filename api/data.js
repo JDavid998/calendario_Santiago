@@ -122,6 +122,66 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true });
         }
 
+        // --- WORKSPACES ---
+        if (action === 'initWorkspaces' && req.method === 'POST') {
+            // Crear tabla si no existe e insertar workspaces por defecto
+            await sql`
+                CREATE TABLE IF NOT EXISTS workspaces (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(50) UNIQUE NOT NULL,
+                    display_name VARCHAR(100) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `;
+
+            await sql`
+                INSERT INTO workspaces (name, display_name) 
+                VALUES 
+                    ('personal', 'Personal'),
+                    ('maacline', 'MAAC Line')
+                ON CONFLICT (name) DO NOTHING
+            `;
+
+            return res.status(200).json({ success: true, message: 'Workspaces inicializados' });
+        }
+
+        if (action === 'getWorkspaces') {
+            const workspaces = await sql`SELECT * FROM workspaces ORDER BY created_at ASC`;
+            return res.status(200).json(workspaces);
+        }
+
+        if (action === 'createWorkspace' && req.method === 'POST') {
+            const { name, display_name } = req.body;
+
+            // Validar que el nombre no esté vacío y sea válido
+            if (!name || !display_name) {
+                return res.status(400).json({ error: 'Nombre y nombre de visualización son requeridos' });
+            }
+
+            // Convertir nombre a formato válido (lowercase, sin espacios)
+            const normalizedName = name.toLowerCase().replace(/\s+/g, '_');
+
+            await sql`
+                INSERT INTO workspaces (name, display_name)
+                VALUES (${normalizedName}, ${display_name})
+            `;
+
+            return res.status(200).json({ success: true, name: normalizedName });
+        }
+
+        if (action === 'deleteWorkspace' && req.method === 'DELETE') {
+            const { workspaceId } = req.query;
+
+            // Prevenir eliminación de workspaces predeterminados
+            const workspace = await sql`SELECT name FROM workspaces WHERE id = ${workspaceId}`;
+            if (workspace.length > 0 && (workspace[0].name === 'personal' || workspace[0].name === 'maacline')) {
+                return res.status(400).json({ error: 'No se pueden eliminar los calendarios predeterminados' });
+            }
+
+            await sql`DELETE FROM workspaces WHERE id = ${workspaceId}`;
+            return res.status(200).json({ success: true });
+        }
+
         return res.status(400).json({ error: 'Acción no válida' });
 
     } catch (error) {

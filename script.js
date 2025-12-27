@@ -21,6 +21,7 @@ let selectedDay = null;
 let calendarNotes = {};
 let guiones = [];
 let editingGuionId = null;
+let workspaces = []; // Lista de calendarios disponibles
 
 // Inicializar la aplicaci√≥n
 document.addEventListener('DOMContentLoaded', () => {
@@ -28,11 +29,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Verificar autenticaci√≥n
-function checkAuthentication() {
+async function checkAuthentication() {
     const savedUser = sessionStorage.getItem('currentUser');
 
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
+        await loadWorkspaces(); // Cargar calendarios disponibles
         checkWorkspace();
     } else {
         showLoginScreen();
@@ -91,6 +93,7 @@ async function processLogin() {
         sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
 
         document.getElementById('loginScreen').classList.remove('active');
+        await loadWorkspaces(); // Cargar calendarios disponibles
         checkWorkspace();
     } catch (e) {
         console.error("Error en login:", e);
@@ -186,6 +189,36 @@ function logout() {
     }
 }
 
+// Cargar workspaces desde la base de datos
+async function loadWorkspaces() {
+    try {
+        // Inicializar workspaces si no existen
+        await fetch('/api/data?action=initWorkspaces', {
+            method: 'POST'
+        });
+
+        // Cargar lista de workspaces
+        const response = await fetch('/api/data?action=getWorkspaces');
+        if (response.ok) {
+            workspaces = await response.json();
+        } else {
+            console.error('Error al cargar workspaces');
+            // Fallback a workspaces por defecto
+            workspaces = [
+                { name: 'personal', display_name: 'Personal' },
+                { name: 'maacline', display_name: 'MAAC Line' }
+            ];
+        }
+    } catch (e) {
+        console.error('Error al cargar workspaces:', e);
+        // Fallback a workspaces por defecto
+        workspaces = [
+            { name: 'personal', display_name: 'Personal' },
+            { name: 'maacline', display_name: 'MAAC Line' }
+        ];
+    }
+}
+
 // Verificar si hay un workspace seleccionado
 function checkWorkspace() {
     const savedWorkspace = sessionStorage.getItem('currentWorkspace');
@@ -201,16 +234,41 @@ function checkWorkspace() {
 // Mostrar selector de workspace
 function showWorkspaceSelector() {
     const selector = document.getElementById('workspaceSelector');
-    const buttons = selector.querySelectorAll('.workspace-btn');
+    const buttonsContainer = selector.querySelector('.workspace-buttons');
 
-    // Mostrar solo los workspaces que el usuario puede acceder
-    buttons.forEach(btn => {
-        const workspace = btn.dataset.workspace;
-        if (currentUser.canAccess.includes(workspace)) {
-            btn.style.display = 'flex';
-        } else {
-            btn.style.display = 'none';
-        }
+    // Limpiar botones existentes
+    buttonsContainer.innerHTML = '';
+
+    // Filtrar workspaces a los que el usuario tiene acceso
+    const accessibleWorkspaces = workspaces.filter(ws =>
+        currentUser.canAccess.includes(ws.name)
+    );
+
+    // Crear botones din√°micamente
+    accessibleWorkspaces.forEach(ws => {
+        const button = document.createElement('button');
+        button.className = `workspace-btn ${ws.name}`;
+        button.dataset.workspace = ws.name;
+        button.onclick = () => selectWorkspace(ws.name);
+
+        // Icono (usar diferentes iconos seg√∫n el workspace)
+        const icon = ws.name === 'personal'
+            ? `<svg class="workspace-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+               </svg>`
+            : `<svg class="workspace-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+               </svg>`;
+
+        button.innerHTML = `
+            ${icon}
+            <div class="workspace-name">${ws.display_name}</div>
+            <div class="workspace-desc">Calendario ${ws.display_name.toLowerCase()}</div>
+        `;
+
+        buttonsContainer.appendChild(button);
     });
 
     selector.classList.add('active');
@@ -979,8 +1037,7 @@ function initializeUserModals() {
         document.getElementById('newUserPassword').value = '';
         document.getElementById('newUserName').value = '';
         document.getElementById('newUserRole').value = 'client';
-        document.getElementById('accessPersonal').checked = false;
-        document.getElementById('accessMaacline').checked = true;
+        renderUserCalendarsCheckboxes();
         addUserModal.classList.add('active');
     };
 
@@ -1044,9 +1101,10 @@ async function saveNewUser() {
         return;
     }
 
+    // Recoger calendarios seleccionados din√°micamente
     const canAccess = [];
-    if (accessPersonal) canAccess.push('personal');
-    if (accessMaacline) canAccess.push('maacline');
+    const checkboxes = document.querySelectorAll('#userCalendarsContainer input[type="checkbox"]:checked');
+    checkboxes.forEach(cb => canAccess.push(cb.value));
 
     if (canAccess.length === 0) {
         alert('Debes seleccionar al menos un calendario');
@@ -1098,3 +1156,182 @@ async function deleteUser(email) {
 }
 
 
+
+// ============================================
+// GESTI”N DE CALENDARIOS (SOLO ADMIN)
+// ============================================
+
+// Mostrar modal de gestiÛn de calendarios
+function showWorkspaceManagement() {
+    if (currentUser.role !== 'admin') {
+        alert('No tienes permisos para gestionar calendarios');
+        return;
+    }
+
+    renderWorkspacesList();
+    document.getElementById('workspaceManagementModal').classList.add('active');
+    initializeWorkspaceModals();
+}
+
+// Inicializar modales de calendarios
+function initializeWorkspaceModals() {
+    const workspaceMgmtModal = document.getElementById('workspaceManagementModal');
+    const addWorkspaceModal = document.getElementById('addWorkspaceModal');
+
+    // Cerrar modal de gestiÛn
+    const closeMgmtBtns = workspaceMgmtModal.querySelectorAll('.modal-close-workspaces');
+    closeMgmtBtns.forEach(btn => {
+        btn.onclick = () => {
+            workspaceMgmtModal.classList.remove('active');
+        };
+    });
+
+    // Cerrar modal de agregar calendario
+    const closeWorkspaceBtns = addWorkspaceModal.querySelectorAll('.modal-close-workspace');
+    closeWorkspaceBtns.forEach(btn => {
+        btn.onclick = () => {
+            addWorkspaceModal.classList.remove('active');
+        };
+    });
+
+    // BotÛn agregar calendario
+    document.getElementById('addWorkspaceBtn').onclick = () => {
+        document.getElementById('newWorkspaceName').value = '';
+        document.getElementById('newWorkspaceDisplayName').value = '';
+        addWorkspaceModal.classList.add('active');
+    };
+
+    // Guardar calendario
+    document.getElementById('saveWorkspaceBtn').onclick = createNewWorkspace;
+}
+
+// Renderizar lista de calendarios
+function renderWorkspacesList() {
+    const workspacesList = document.getElementById('workspacesList');
+
+    if (workspaces.length === 0) {
+        workspacesList.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 20px;">No hay calendarios registrados</p>';
+        return;
+    }
+
+    let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
+
+    workspaces.forEach(ws => {
+        const isDefault = ws.name === 'personal' || ws.name === 'maacline';
+        const deleteBtn = isDefault
+            ? ''
+            : <button onclick="deleteWorkspace(+ws.id+)" class="btn-icon btn-delete" style="flex-shrink: 0;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </button>;
+
+        html += 
+            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">+ws.display_name+</div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 4px;">ID: +ws.name+</div>
+                        +(isDefault ? '<div style="font-size: 0.85rem; color: var(--primary-light);">Calendario predeterminado</div>' : '')+
+                    </div>
+                    +deleteBtn+
+                </div>
+            </div>
+        ;
+    });
+
+    html += '</div>';
+    workspacesList.innerHTML = html;
+}
+
+// Crear nuevo calendario
+async function createNewWorkspace() {
+    const name = document.getElementById('newWorkspaceName').value.trim();
+    const displayName = document.getElementById('newWorkspaceDisplayName').value.trim();
+
+    if (!name || !displayName) {
+        alert('Por favor completa todos los campos');
+        return;
+    }
+
+    // Validar formato del nombre
+    if (!/^[a-z0-9_]+$.test(name)) {
+        alert('El nombre interno solo puede contener letras min˙sculas, n˙meros y guiones bajos');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/data?action=createWorkspace', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, display_name: displayName })
+        });
+
+        if (response.ok) {
+            await loadWorkspaces(); // Recargar lista
+            renderWorkspacesList();
+            document.getElementById('addWorkspaceModal').classList.remove('active');
+            alert('Calendario creado exitosamente');
+        } else {
+            const error = await response.json();
+            alert('Error: ' + (error.error || 'No se pudo crear el calendario'));
+        }
+    } catch (e) {
+        console.error('Error al crear calendario:', e);
+        alert('Error al crear calendario');
+    }
+}
+
+// Eliminar calendario
+async function deleteWorkspace(id) {
+    if (!confirm('øEst·s seguro de que quieres eliminar este calendario? Todos los datos asociados se perder·n.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(/api/data?action=deleteWorkspace&workspaceId=+id, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            await loadWorkspaces(); // Recargar lista
+            renderWorkspacesList();
+            alert('Calendario eliminado exitosamente');
+        } else {
+            const error = await response.json();
+            alert('Error: ' + (error.error || 'No se pudo eliminar el calendario'));
+        }
+    } catch (e) {
+        console.error('Error al eliminar calendario:', e);
+        alert('Error al eliminar calendario');
+    }
+}
+
+// Renderizar checkboxes de calendarios en formulario de usuario
+function renderUserCalendarsCheckboxes() {
+    const container = document.getElementById('userCalendarsContainer');
+    container.innerHTML = '';
+
+    workspaces.forEach(ws => {
+        const label = document.createElement('label');
+        label.style.cssText = 'display: flex; align-items: center; gap: 8px;';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = ws.name;
+        checkbox.id = ccess_+ws.name;
+        
+        // Marcar MAAC Line por defecto
+        if (ws.name === 'maacline') {
+            checkbox.checked = true;
+        }
+        
+        const span = document.createElement('span');
+        span.textContent = ws.display_name;
+        
+        label.appendChild(checkbox);
+        label.appendChild(span);
+        container.appendChild(label);
+    });
+}
