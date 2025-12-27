@@ -1526,3 +1526,24 @@ h6,
     font-family: 'Mewatonia', sans-serif;
     letter-spacing: 1px;
 }
+/* Badges de Formato de Guion */
+.badge-carrusel {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border: 1px solid #3b82f6;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-reel {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid #ef4444;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+

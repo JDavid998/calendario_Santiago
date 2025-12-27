@@ -242,6 +242,7 @@
                     <thead>
                         <tr>
                             <th>Fecha</th>
+                            <th>Formato</th>
                             <th>Idea/Título</th>
                             <th>Guión Completo</th>
                             <th>Plataforma</th>
@@ -341,185 +342,201 @@
                                     type="checkbox" name="plataforma" value="Threads"> Threads</label>
                         </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="guionFormato">Formato:</label>
+                            <select id="guionFormato">
+                                <option value="Carrusel">Carrusel</option>
+                                <option value="Reel">Reel</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="guionEstado">Estado:</label>
+                            <select id="guionEstado">
+                                <option value="Idea">Idea</option>
+                                <option value="En proceso">En proceso</option>
+                                <option value="Listo">Listo</option>
+                                <option value="Programado">Programado</option>
+                                <option value="Publicado">Publicado</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="form-group">
-                        <label for="guionEstado">Estado:</label>
-                        <select id="guionEstado">
-                            <option value="Idea">Idea</option>
-                            <option value="En proceso">En proceso</option>
-                            <option value="Listo">Listo</option>
-                            <option value="Programado">Programado</option>
-                            <option value="Publicado">Publicado</option>
+                        <label for="guionNotas">Notas adicionales:</label>
+                        <input type="text" id="guionNotas" placeholder="Ej: Grabar video, usar carousel, etc.">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="saveGuionBtn" class="btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 0-2-2V5a2 2 0 0 0 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                            <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                        Guardar Guión
+                    </button>
+                    <button class="modal-close-guion btn-secondary">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para gestionar usuarios (solo admin) -->
+        <div id="userManagementModal" class="modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h3>Gestión de Usuarios</h3>
+                    <button class="modal-close-users">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <button id="addUserBtn" class="btn-primary" style="margin-bottom: 20px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Agregar Usuario
+                    </button>
+                    <div class="users-list" id="usersList"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-close-users btn-secondary">Cerrar</button>
+                </div>
+            </div>
+        </div> <!-- Modal para ver guión (Detalles) -->
+        <div id="viewGuionModal" class="modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h3 id="viewGuionTitle">Detalles del Guión</h3>
+                    <button class="modal-close-view-guion">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="view-detail-group">
+                        <label>Fecha:</label>
+                        <div id="viewGuionFecha" class="view-detail-content"></div>
+                    </div>
+                    <div class="view-detail-group">
+                        <label>Formato:</label>
+                        <div id="viewGuionFormato" class="view-detail-content"></div>
+                    </div>
+                    <div class="view-detail-group">
+                        <label>Plataformas:</label>
+                        <div id="viewGuionPlataformas" class="view-detail-content"></div>
+                    </div>
+                    <div class="view-detail-group">
+                        <label>Estado:</label>
+                        <div id="viewGuionEstado" class="view-detail-content"></div>
+                    </div>
+                    <div class="view-detail-group">
+                        <label>Guión Completo:</label>
+                        <div id="viewGuionContenido" class="view-detail-content content-scrollable"></div>
+                    </div>
+                    <div class="view-detail-group">
+                        <label>Notas:</label>
+                        <div id="viewGuionNotas" class="view-detail-content"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-close-view-guion btn-secondary">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Modal para agregar/editar usuario -->
+        <div id="addUserModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="userModalTitle">Nuevo Usuario</h3>
+                    <button class="modal-close-user">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="newUserEmail">Email:</label>
+                        <input type="email" id="newUserEmail" placeholder="usuario@ejemplo.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newUserPassword">Contraseña:</label>
+                        <input type="password" id="newUserPassword" placeholder="Contraseña segura" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newUserName">Nombre:</label>
+                        <input type="text" id="newUserName" placeholder="Nombre del usuario" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newUserRole">Rol:</label>
+                        <select id="newUserRole">
+                            <option value="client">Cliente</option>
+                            <option value="admin">Administrador</option>
                         </select>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label for="guionNotas">Notas adicionales:</label>
-                    <input type="text" id="guionNotas" placeholder="Ej: Grabar video, usar carousel, etc.">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="saveGuionBtn" class="btn-primary">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 21H5a2 2 0 0 0-2-2V5a2 2 0 0 0 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                        <polyline points="7 3 7 8 15 8"></polyline>
-                    </svg>
-                    Guardar Guión
-                </button>
-                <button class="modal-close-guion btn-secondary">Cancelar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal para gestionar usuarios (solo admin) -->
-    <div id="userManagementModal" class="modal">
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h3>Gestión de Usuarios</h3>
-                <button class="modal-close-users">&times;</button>
-            </div>
-            <div class="modal-body">
-                <button id="addUserBtn" class="btn-primary" style="margin-bottom: 20px;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Agregar Usuario
-                </button>
-                <div class="users-list" id="usersList"></div>
-            </div>
-            <div class="modal-footer">
-                <button class="modal-close-users btn-secondary">Cerrar</button>
-            </div>
-        </div>
-    </div> <!-- Modal para ver guión (Detalles) -->
-    <div id="viewGuionModal" class="modal">
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h3 id="viewGuionTitle">Detalles del Guión</h3>
-                <button class="modal-close-view-guion">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="view-detail-group">
-                    <label>Fecha:</label>
-                    <div id="viewGuionFecha" class="view-detail-content"></div>
-                </div>
-                <div class="view-detail-group">
-                    <label>Plataformas:</label>
-                    <div id="viewGuionPlataformas" class="view-detail-content"></div>
-                </div>
-                <div class="view-detail-group">
-                    <label>Estado:</label>
-                    <div id="viewGuionEstado" class="view-detail-content"></div>
-                </div>
-                <div class="view-detail-group">
-                    <label>Guión Completo:</label>
-                    <div id="viewGuionContenido" class="view-detail-content content-scrollable"></div>
-                </div>
-                <div class="view-detail-group">
-                    <label>Notas:</label>
-                    <div id="viewGuionNotas" class="view-detail-content"></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="modal-close-view-guion btn-secondary">Cerrar</button>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- Modal para agregar/editar usuario -->
-    <div id="addUserModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="userModalTitle">Nuevo Usuario</h3>
-                <button class="modal-close-user">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="newUserEmail">Email:</label>
-                    <input type="email" id="newUserEmail" placeholder="usuario@ejemplo.com" required>
-                </div>
-                <div class="form-group">
-                    <label for="newUserPassword">Contraseña:</label>
-                    <input type="password" id="newUserPassword" placeholder="Contraseña segura" required>
-                </div>
-                <div class="form-group">
-                    <label for="newUserName">Nombre:</label>
-                    <input type="text" id="newUserName" placeholder="Nombre del usuario" required>
-                </div>
-                <div class="form-group">
-                    <label for="newUserRole">Rol:</label>
-                    <select id="newUserRole">
-                        <option value="client">Cliente</option>
-                        <option value="admin">Administrador</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Acceso a calendarios:</label>
-                    <div id="userCalendarsContainer"
-                        style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-                        <!-- Los calendarios se cargarán dinámicamente -->
+                    <div class="form-group">
+                        <label>Acceso a calendarios:</label>
+                        <div id="userCalendarsContainer"
+                            style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                            <!-- Los calendarios se cargarán dinámicamente -->
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button id="saveUserBtn" class="btn-primary">Guardar Usuario</button>
-                <button class="modal-close-user btn-secondary">Cancelar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal para gestionar calendarios (solo admin) -->
-    <div id="workspaceManagementModal" class="modal">
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h3>Gestión de Calendarios</h3>
-                <button class="modal-close-workspaces">&times;</button>
-            </div>
-            <div class="modal-body">
-                <button id="addWorkspaceBtn" class="btn-primary" style="margin-bottom: 20px;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Nuevo Calendario
-                </button>
-                <div class="workspaces-list" id="workspacesList"></div>
-            </div>
-            <div class="modal-footer">
-                <button class="modal-close-workspaces btn-secondary">Cerrar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal para agregar calendario -->
-    <div id="addWorkspaceModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Nuevo Calendario</h3>
-                <button class="modal-close-workspace">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="newWorkspaceName">Nombre interno:</label>
-                    <input type="text" id="newWorkspaceName" placeholder="ej: clientes" required>
-                    <small style="color: var(--text-secondary); font-size: 0.85rem;">Solo letras minúsculas, números y
-                        guiones bajos</small>
-                </div>
-                <div class="form-group">
-                    <label for="newWorkspaceDisplayName">Nombre para mostrar:</label>
-                    <input type="text" id="newWorkspaceDisplayName" placeholder="ej: Clientes" required>
+                <div class="modal-footer">
+                    <button id="saveUserBtn" class="btn-primary">Guardar Usuario</button>
+                    <button class="modal-close-user btn-secondary">Cancelar</button>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button id="saveWorkspaceBtn" class="btn-primary">Crear Calendario</button>
-                <button class="modal-close-workspace btn-secondary">Cancelar</button>
+        </div>
+
+        <!-- Modal para gestionar calendarios (solo admin) -->
+        <div id="workspaceManagementModal" class="modal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h3>Gestión de Calendarios</h3>
+                    <button class="modal-close-workspaces">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <button id="addWorkspaceBtn" class="btn-primary" style="margin-bottom: 20px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Nuevo Calendario
+                    </button>
+                    <div class="workspaces-list" id="workspacesList"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-close-workspaces btn-secondary">Cerrar</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <script src="script.js"></script>
+        <!-- Modal para agregar calendario -->
+        <div id="addWorkspaceModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Nuevo Calendario</h3>
+                    <button class="modal-close-workspace">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="newWorkspaceName">Nombre interno:</label>
+                        <input type="text" id="newWorkspaceName" placeholder="ej: clientes" required>
+                        <small style="color: var(--text-secondary); font-size: 0.85rem;">Solo letras minúsculas, números
+                            y
+                            guiones bajos</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="newWorkspaceDisplayName">Nombre para mostrar:</label>
+                        <input type="text" id="newWorkspaceDisplayName" placeholder="ej: Clientes" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="saveWorkspaceBtn" class="btn-primary">Crear Calendario</button>
+                    <button class="modal-close-workspace btn-secondary">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <script src="script.js"></script>
 </body>
 
 </html>

@@ -800,13 +800,17 @@ function renderGuiones() {
 
         actions += `</div>`;
 
-        // Truncar contenido para vista compacta
         const truncatedContent = guion.contenido && guion.contenido.length > 80
             ? guion.contenido.substring(0, 80) + '...'
             : (guion.contenido || '');
 
+        const formatoBadge = guion.formato ?
+            `<span class="${guion.formato === 'Carrusel' ? 'badge-carrusel' : 'badge-reel'}">${guion.formato}</span>` :
+            '-';
+
         row.innerHTML = `
             <td>${formattedDate}</td>
+            <td>${formatoBadge}</td>
             <td><strong>${guion.titulo}</strong></td>
             <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${truncatedContent}</td>
             <td>${platText}</td>
@@ -844,6 +848,7 @@ async function saveGuion() {
     const fecha = document.getElementById('guionFecha').value;
     const titulo = document.getElementById('guionTitulo').value.trim();
     const contenido = document.getElementById('guionContenido').value.trim();
+    const formato = document.getElementById('guionFormato').value;
 
     const checkboxes = document.querySelectorAll('input[name="plataforma"]:checked');
     const plataformas = Array.from(checkboxes).map(cb => cb.value);
@@ -861,6 +866,7 @@ async function saveGuion() {
         fecha,
         titulo,
         contenido,
+        formato,
         plataformas,
         estado,
         notas
@@ -912,6 +918,10 @@ function viewGuion(id) {
     document.getElementById('viewGuionTitle').textContent = guion.titulo;
     document.getElementById('viewGuionFecha').textContent = formatDate(guion.fecha);
 
+    // Mostrar formato
+    const formatoClass = guion.formato === 'Reel' ? 'badge-reel' : 'badge-carrusel';
+    document.getElementById('viewGuionFormato').innerHTML = `<span class="${formatoClass}">${guion.formato || 'Carrusel'}</span>`;
+
     // Mostrar plataformas
     const platText = Array.isArray(guion.plataformas)
         ? guion.plataformas.join(', ')
@@ -942,6 +952,7 @@ function editGuion(id) {
     editingGuionId = id;
 
     document.getElementById('guionFecha').value = guion.fecha;
+    document.getElementById('guionFormato').value = guion.formato || 'Carrusel';
     document.getElementById('guionTitulo').value = guion.titulo;
     document.getElementById('guionContenido').value = guion.contenido;
 
@@ -988,6 +999,7 @@ function resetGuionForm() {
     document.getElementById('guionFecha').value = '';
     document.getElementById('guionTitulo').value = '';
     document.getElementById('guionContenido').value = '';
+    document.getElementById('guionFormato').value = 'Carrusel';
 
     // Limpiar checkboxes
     const checkboxes = document.querySelectorAll('input[name="plataforma"]');
