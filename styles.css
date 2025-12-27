@@ -653,7 +653,7 @@ textarea {
 }
 
 .day-cell.has-note {
-    background: linear-gradient(135deg, rgba(85, 156, 173, 0.1) 0%, rgba(85, 156, 173, 0.2) 100%);
+    background: var(--bg-secondary);
     border-color: #A22122;
 }
 
@@ -668,7 +668,7 @@ textarea {
 }
 
 .day-cell.has-guion {
-    background: linear-gradient(135deg, rgba(64, 118, 132, 0.1) 0%, rgba(64, 118, 132, 0.2) 100%);
+    background: var(--bg-secondary);
     border-color: #407684;
 }
 
