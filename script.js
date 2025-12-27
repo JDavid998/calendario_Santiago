@@ -925,76 +925,103 @@ async function saveGuion() {
 
 // Ver guión (solo lectura)
 function viewGuion(id) {
-    const guion = guiones.find(g => g.id === id);
-    if (!guion) return;
-
-    // Llenar el modal de vista
-    document.getElementById('viewGuionTitle').textContent = guion.titulo;
-    document.getElementById('viewGuionFecha').textContent = formatDate(guion.fecha);
-
-    // Mostrar formato
-    const formatoClass = guion.formato === 'Reel' ? 'badge-reel' : 'badge-carrusel';
-    document.getElementById('viewGuionFormato').innerHTML = `<span class="${formatoClass}">${guion.formato || 'Carrusel'}</span>`;
-
-    // Mostrar plataformas
-    const platText = Array.isArray(guion.plataformas)
-        ? guion.plataformas.join(', ')
-        : (guion.plataforma || 'No especificado');
-    document.getElementById('viewGuionPlataformas').textContent = platText;
-
-    // Mostrar estado con badge
-    const statusClass = getStatusClass(guion.estado);
-    document.getElementById('viewGuionEstado').innerHTML = `<span class="status-badge ${statusClass}">${guion.estado}</span>`;
-
-    // Mostrar contenido completo en formato tabla
-    const contenidoDiv = document.getElementById('viewGuionContenido');
-    if (guion.contenido) {
-        try {
-            const data = JSON.parse(guion.contenido);
-            const formato = guion.formato || 'Carrusel';
-
-            let tableHTML = '<table class="script-editor-table" style="margin-top: 12px;"><thead><tr>';
-
-            if (formato === 'Carrusel') {
-                tableHTML += '<th>Slide</th><th>Imagen</th><th>Descripción</th><th>Texto</th>';
-            } else {
-                tableHTML += '<th>Escena</th><th>Plano</th><th>Descripción</th><th>Diálogo</th><th>Audio</th>';
-            }
-
-            tableHTML += '</tr></thead><tbody>';
-
-            data.forEach(row => {
-                tableHTML += '<tr>';
-                if (formato === 'Carrusel') {
-                    tableHTML += `<td>${row.slide || ''}</td>`;
-                    tableHTML += `<td>${row.imagen || ''}</td>`;
-                    tableHTML += `<td>${row.descripcion || ''}</td>`;
-                    tableHTML += `<td>${row.texto || ''}</td>`;
-                } else {
-                    tableHTML += `<td>${row.escena || ''}</td>`;
-                    tableHTML += `<td>${row.plano || ''}</td>`;
-                    tableHTML += `<td>${row.descripcion || ''}</td>`;
-                    tableHTML += `<td>${row.dialogo || ''}</td>`;
-                    tableHTML += `<td>${row.audio || ''}</td>`;
-                }
-                tableHTML += '</tr>';
-            });
-
-            tableHTML += '</tbody></table>';
-            contenidoDiv.innerHTML = tableHTML;
-        } catch (e) {
-            console.error('Error al parsear contenido:', e);
-            contenidoDiv.textContent = guion.contenido || 'Sin contenido';
+    try {
+        console.log('Abriendo guión ID:', id);
+        const guion = guiones.find(g => g.id === id);
+        if (!guion) {
+            console.error('Guión no encontrado');
+            return;
         }
-    } else {
-        contenidoDiv.textContent = 'Sin contenido';
+
+        // Llenar datos básicos
+        const setTitle = document.getElementById('viewGuionTitle');
+        if (setTitle) setTitle.textContent = guion.titulo;
+
+        const setDate = document.getElementById('viewGuionFecha');
+        if (setDate) setDate.textContent = formatDate(guion.fecha);
+
+        // Mostrar formato
+        const formatoClass = guion.formato === 'Reel' ? 'badge-reel' : 'badge-carrusel';
+        const setFormat = document.getElementById('viewGuionFormato');
+        if (setFormat) setFormat.innerHTML = `<span class="${formatoClass}">${guion.formato || 'Carrusel'}</span>`;
+
+        // Mostrar plataformas
+        const platText = Array.isArray(guion.plataformas)
+            ? guion.plataformas.join(', ')
+            : (guion.plataforma || 'No especificado');
+        const setPlat = document.getElementById('viewGuionPlataformas');
+        if (setPlat) setPlat.textContent = platText;
+
+        // Mostrar estado
+        const statusClass = getStatusClass(guion.estado);
+        const setStatus = document.getElementById('viewGuionEstado');
+        if (setStatus) setStatus.innerHTML = `<span class="status-badge ${statusClass}">${guion.estado}</span>`;
+
+        // Mostrar contenido
+        const contenidoDiv = document.getElementById('viewGuionContenido');
+        if (contenidoDiv) {
+            if (guion.contenido) {
+                try {
+                    const data = JSON.parse(guion.contenido);
+                    const formato = guion.formato || 'Carrusel';
+
+                    let tableHTML = '<table class="script-editor-table" style="margin-top: 12px;"><thead><tr>';
+
+                    if (formato === 'Carrusel') {
+                        tableHTML += '<th>Slide</th><th>Imagen</th><th>Descripción</th><th>Texto</th>';
+                    } else {
+                        tableHTML += '<th>Escena</th><th>Plano</th><th>Descripción</th><th>Diálogo</th><th>Audio</th>';
+                    }
+
+                    tableHTML += '</tr></thead><tbody>';
+
+                    data.forEach(row => {
+                        tableHTML += '<tr>';
+                        if (formato === 'Carrusel') {
+                            tableHTML += `<td>${row.slide || ''}</td>`;
+                            tableHTML += `<td>${row.imagen || ''}</td>`;
+                            tableHTML += `<td>${row.descripcion || ''}</td>`;
+                            tableHTML += `<td>${row.texto || ''}</td>`;
+                        } else {
+                            tableHTML += `<td>${row.escena || ''}</td>`;
+                            tableHTML += `<td>${row.plano || ''}</td>`;
+                            tableHTML += `<td>${row.descripcion || ''}</td>`;
+                            tableHTML += `<td>${row.dialogo || ''}</td>`;
+                            tableHTML += `<td>${row.audio || ''}</td>`;
+                        }
+                        tableHTML += '</tr>';
+                    });
+
+                    tableHTML += '</tbody></table>';
+                    contenidoDiv.innerHTML = tableHTML;
+                } catch (e) {
+                    console.error('Error al parsear contenido:', e);
+                    contenidoDiv.textContent = guion.contenido || 'Sin contenido';
+                }
+            } else {
+                contenidoDiv.textContent = 'Sin contenido';
+            }
+        }
+
+        // Mostrar notas
+        const setNotas = document.getElementById('viewGuionNotas');
+        if (setNotas) setNotas.textContent = guion.notas || 'Sin notas';
+
+        // Abrir modal con requestAnimationFrame para asegurar renderizado
+        requestAnimationFrame(() => {
+            const modal = document.getElementById('viewGuionModal');
+            if (modal) {
+                modal.classList.add('active');
+                console.log('Clase active añadida a viewGuionModal');
+            } else {
+                alert('Error: No se encontró el modal de vista');
+            }
+        });
+
+    } catch (error) {
+        console.error('Error en viewGuion:', error);
+        alert('Error al abrir el guión: ' + error.message);
     }
-
-    // Mostrar notas
-    document.getElementById('viewGuionNotas').textContent = guion.notas || 'Sin notas';
-
-    // Abrir modal
-    document.getElementById('viewGuionModal').classList.add('active');
 }
 
 // Editar guión
@@ -1243,17 +1270,28 @@ document.addEventListener('keypress', (e) => {
 // ============================================
 
 // Mostrar modal de gestión de usuarios
+// Mostrar modal de gestión de usuarios
 function showUserManagement() {
-    if (currentUser.role !== 'admin') {
-        alert('No tienes permisos para gestionar usuarios');
-        return;
+    try {
+        if (currentUser.role !== 'admin') {
+            alert('No tienes permisos para gestionar usuarios');
+            return;
+        }
+
+        renderUsersList();
+
+        requestAnimationFrame(() => {
+            const modal = document.getElementById('userManagementModal');
+            if (modal) {
+                modal.classList.add('active');
+                // Inicializar eventos de modales si no se han inicializado
+                initializeUserModals();
+            }
+        });
+    } catch (e) {
+        console.error('Error en showUserManagement:', e);
+        alert('Error al abrir gestión de usuarios: ' + e.message);
     }
-
-    renderUsersList();
-    document.getElementById('userManagementModal').classList.add('active');
-
-    // Inicializar eventos de modales si no se han inicializado
-    initializeUserModals();
 }
 
 // Inicializar modales de usuarios
@@ -1408,15 +1446,27 @@ async function deleteUser(email) {
 // ============================================
 
 // Mostrar modal de gestión de calendarios
+// Mostrar modal de gestión de calendarios
 function showWorkspaceManagement() {
-    if (currentUser.role !== 'admin') {
-        alert('No tienes permisos para gestionar calendarios');
-        return;
-    }
+    try {
+        if (currentUser.role !== 'admin') {
+            alert('No tienes permisos para gestionar calendarios');
+            return;
+        }
 
-    renderWorkspacesList();
-    document.getElementById('workspaceManagementModal').classList.add('active');
-    initializeWorkspaceModals();
+        renderWorkspacesList();
+
+        requestAnimationFrame(() => {
+            const modal = document.getElementById('workspaceManagementModal');
+            if (modal) {
+                modal.classList.add('active');
+                initializeWorkspaceModals();
+            }
+        });
+    } catch (e) {
+        console.error('Error en showWorkspaceManagement:', e);
+        alert('Error al abrir gestión de calendarios: ' + e.message);
+    }
 }
 
 // Inicializar modales de calendarios
