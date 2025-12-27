@@ -520,106 +520,6 @@ function initializeModals() {
             addScriptRow(formato);
         });
     }
-
-    // Modal de gestión de usuarios
-    const userMgmtModal = document.getElementById('userManagementModal');
-    const addUserModal = document.getElementById('addUserModal');
-
-    if (userMgmtModal) {
-        const closeMgmtBtns = userMgmtModal.querySelectorAll('.modal-close-users');
-        closeMgmtBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                userMgmtModal.classList.remove('active');
-            });
-        });
-
-        userMgmtModal.addEventListener('click', (e) => {
-            if (e.target === userMgmtModal) {
-                userMgmtModal.classList.remove('active');
-            }
-        });
-    }
-
-    if (addUserModal) {
-        const closeUserBtns = addUserModal.querySelectorAll('.modal-close-user');
-        closeUserBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                addUserModal.classList.remove('active');
-            });
-        });
-
-        addUserModal.addEventListener('click', (e) => {
-            if (e.target === addUserModal) {
-                addUserModal.classList.remove('active');
-            }
-        });
-
-        const addUserBtn = document.getElementById('addUserBtn');
-        if (addUserBtn) {
-            addUserBtn.addEventListener('click', () => {
-                document.getElementById('userModalTitle').textContent = 'Nuevo Usuario';
-                document.getElementById('newUserEmail').value = '';
-                document.getElementById('newUserPassword').value = '';
-                document.getElementById('newUserName').value = '';
-                document.getElementById('newUserRole').value = 'client';
-                renderUserCalendarsCheckboxes();
-                addUserModal.classList.add('active');
-            });
-        }
-
-        const saveUserBtn = document.getElementById('saveUserBtn');
-        if (saveUserBtn) {
-            saveUserBtn.addEventListener('click', saveNewUser);
-        }
-    }
-
-    // Modal de gestión de calendarios
-    const workspaceMgmtModal = document.getElementById('workspaceManagementModal');
-    const addWorkspaceModal = document.getElementById('addWorkspaceModal');
-
-    if (workspaceMgmtModal) {
-        const closeWorkspaceMgmtBtns = workspaceMgmtModal.querySelectorAll('.modal-close-workspaces');
-        closeWorkspaceMgmtBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                workspaceMgmtModal.classList.remove('active');
-            });
-        });
-
-        workspaceMgmtModal.addEventListener('click', (e) => {
-            if (e.target === workspaceMgmtModal) {
-                workspaceMgmtModal.classList.remove('active');
-            }
-        });
-    }
-
-    if (addWorkspaceModal) {
-        const closeWorkspaceBtns = addWorkspaceModal.querySelectorAll('.modal-close-workspace');
-        closeWorkspaceBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                addWorkspaceModal.classList.remove('active');
-            });
-        });
-
-        addWorkspaceModal.addEventListener('click', (e) => {
-            if (e.target === addWorkspaceModal) {
-                addWorkspaceModal.classList.remove('active');
-            }
-        });
-
-        const addWorkspaceBtn = document.getElementById('addWorkspaceBtn');
-        if (addWorkspaceBtn) {
-            addWorkspaceBtn.addEventListener('click', () => {
-                document.getElementById('newWorkspaceName').value = '';
-                document.getElementById('newWorkspaceDisplayName').value = '';
-                addWorkspaceModal.classList.add('active');
-            });
-        }
-
-        const saveWorkspaceBtn = document.getElementById('saveWorkspaceBtn');
-        if (saveWorkspaceBtn) {
-            saveWorkspaceBtn.addEventListener('click', createNewWorkspace);
-        }
-    }
 }
 
 // Renderizar calendario
@@ -1351,8 +1251,61 @@ function showUserManagement() {
 
     renderUsersList();
     document.getElementById('userManagementModal').classList.add('active');
+
+    // Inicializar modales solo la primera vez
+    if (!window.userModalsInitialized) {
+        initializeUserModals();
+        window.userModalsInitialized = true;
+    }
 }
 
+// Inicializar modales de usuarios
+function initializeUserModals() {
+    const userMgmtModal = document.getElementById('userManagementModal');
+    const addUserModal = document.getElementById('addUserModal');
+
+    // Cerrar modal de gestión
+    const closeMgmtBtns = userMgmtModal.querySelectorAll('.modal-close-users');
+    closeMgmtBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            userMgmtModal.classList.remove('active');
+        });
+    });
+
+    userMgmtModal.addEventListener('click', (e) => {
+        if (e.target === userMgmtModal) {
+            userMgmtModal.classList.remove('active');
+        }
+    });
+
+    // Cerrar modal de agregar usuario
+    const closeUserBtns = addUserModal.querySelectorAll('.modal-close-user');
+    closeUserBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            addUserModal.classList.remove('active');
+        });
+    });
+
+    addUserModal.addEventListener('click', (e) => {
+        if (e.target === addUserModal) {
+            addUserModal.classList.remove('active');
+        }
+    });
+
+    // Botón agregar usuario
+    document.getElementById('addUserBtn').addEventListener('click', () => {
+        document.getElementById('userModalTitle').textContent = 'Nuevo Usuario';
+        document.getElementById('newUserEmail').value = '';
+        document.getElementById('newUserPassword').value = '';
+        document.getElementById('newUserName').value = '';
+        document.getElementById('newUserRole').value = 'client';
+        renderUserCalendarsCheckboxes();
+        addUserModal.classList.add('active');
+    });
+
+    // Guardar usuario
+    document.getElementById('saveUserBtn').addEventListener('click', saveNewUser);
+}
 
 // Renderizar lista de usuarios
 async function renderUsersList() {
@@ -1478,8 +1431,57 @@ function showWorkspaceManagement() {
 
     renderWorkspacesList();
     document.getElementById('workspaceManagementModal').classList.add('active');
+
+    // Inicializar modales solo la primera vez
+    if (!window.workspaceModalsInitialized) {
+        initializeWorkspaceModals();
+        window.workspaceModalsInitialized = true;
+    }
 }
 
+// Inicializar modales de calendarios
+function initializeWorkspaceModals() {
+    const workspaceMgmtModal = document.getElementById('workspaceManagementModal');
+    const addWorkspaceModal = document.getElementById('addWorkspaceModal');
+
+    // Cerrar modal de gestión
+    const closeMgmtBtns = workspaceMgmtModal.querySelectorAll('.modal-close-workspaces');
+    closeMgmtBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            workspaceMgmtModal.classList.remove('active');
+        });
+    });
+
+    workspaceMgmtModal.addEventListener('click', (e) => {
+        if (e.target === workspaceMgmtModal) {
+            workspaceMgmtModal.classList.remove('active');
+        }
+    });
+
+    // Cerrar modal de agregar calendario
+    const closeWorkspaceBtns = addWorkspaceModal.querySelectorAll('.modal-close-workspace');
+    closeWorkspaceBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            addWorkspaceModal.classList.remove('active');
+        });
+    });
+
+    addWorkspaceModal.addEventListener('click', (e) => {
+        if (e.target === addWorkspaceModal) {
+            addWorkspaceModal.classList.remove('active');
+        }
+    });
+
+    // Botón agregar calendario
+    document.getElementById('addWorkspaceBtn').addEventListener('click', () => {
+        document.getElementById('newWorkspaceName').value = '';
+        document.getElementById('newWorkspaceDisplayName').value = '';
+        addWorkspaceModal.classList.add('active');
+    });
+
+    // Guardar calendario
+    document.getElementById('saveWorkspaceBtn').addEventListener('click', createNewWorkspace);
+}
 
 // Renderizar lista de calendarios
 function renderWorkspacesList() {
