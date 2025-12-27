@@ -25,7 +25,13 @@ let workspaces = []; // Lista de calendarios disponibles
 
 // Inicializar la aplicación
 document.addEventListener('DOMContentLoaded', () => {
-    // initializeModals(); // REVERTIDO: Se mueve de vuelta a initializeApp
+    console.log('📄 [SCRIPT] script.js cargado correctamente');
+    console.log('📄 [SCRIPT] Verificando funciones globales...');
+    console.log('  - viewGuion:', typeof viewGuion);
+    console.log('  - editGuion:', typeof editGuion);
+    console.log('  - deleteGuion:', typeof deleteGuion);
+    console.log('  - showUserManagement:', typeof showUserManagement);
+    console.log('  - showWorkspaceManagement:', typeof showWorkspaceManagement);
     checkAuthentication();
 });
 
@@ -306,10 +312,11 @@ function changeWorkspace() {
 
 // Inicializar la aplicación
 async function initializeApp() {
+    console.log('🚀 [INIT] Iniciando aplicación...');
     await loadData();
     initializeControls();
     initializeTabs();
-    initializeModals(); // RESTAURADO: Necesario aquí para asegurar que los elementos existen
+    initializeModals();
     renderCalendar();
     renderGuiones();
     setCurrentMonthYear();
@@ -318,6 +325,7 @@ async function initializeApp() {
 
     // Mostrar el contenedor principal
     document.getElementById('mainContainer').style.display = 'block';
+    console.log('✅ [INIT] Aplicación inicializada correctamente');
 }
 
 // Cargar datos del servidor
@@ -432,6 +440,7 @@ function initializeTabs() {
 
 // Inicializar modales
 function initializeModals() {
+    console.log('🔧 [MODALS] Inicializando modales...');
     // Modal de día
     const dayModal = document.getElementById('dayModal');
     const closeBtns = dayModal.querySelectorAll('.modal-close');
@@ -925,8 +934,12 @@ async function saveGuion() {
 
 // Ver guión (solo lectura)
 function viewGuion(id) {
+    console.log('👁️ [VIEW] Abriendo vista de guión, ID:', id);
     const guion = guiones.find(g => g.id === id);
-    if (!guion) return;
+    if (!guion) {
+        console.error('❌ [VIEW] Guión no encontrado, ID:', id);
+        return;
+    }
 
     // Llenar el modal de vista
     document.getElementById('viewGuionTitle').textContent = guion.titulo;
@@ -994,15 +1007,23 @@ function viewGuion(id) {
     document.getElementById('viewGuionNotas').textContent = guion.notas || 'Sin notas';
 
     // Abrir modal
+    console.log('✅ [VIEW] Abriendo modal de vista');
     document.getElementById('viewGuionModal').classList.add('active');
 }
 
 // Editar guión
 function editGuion(id) {
-    if (currentUser.role === 'client') return;
+    console.log('✏️ [EDIT] Abriendo editor de guión, ID:', id);
+    if (currentUser.role === 'client') {
+        console.warn('⚠️ [EDIT] Usuario cliente no puede editar');
+        return;
+    }
 
     const guion = guiones.find(g => g.id === id);
-    if (!guion) return;
+    if (!guion) {
+        console.error('❌ [EDIT] Guión no encontrado, ID:', id);
+        return;
+    }
 
     editingGuionId = id;
 
@@ -1244,18 +1265,28 @@ document.addEventListener('keypress', (e) => {
 
 // Mostrar modal de gestión de usuarios
 function showUserManagement() {
+    console.log('👥 [USER-MGMT] Función showUserManagement llamada');
+    console.log('👥 [USER-MGMT] Usuario actual:', currentUser);
+
     if (currentUser.role !== 'admin') {
+        console.warn('⚠️ [USER-MGMT] Usuario no es admin, rol:', currentUser.role);
         alert('No tienes permisos para gestionar usuarios');
         return;
     }
 
+    console.log('👥 [USER-MGMT] Renderizando lista de usuarios...');
     renderUsersList();
+    console.log('👥 [USER-MGMT] Abriendo modal...');
     document.getElementById('userManagementModal').classList.add('active');
 
     // Inicializar modales solo la primera vez
     if (!window.userModalsInitialized) {
+        console.log('🔧 [USER-MGMT] Inicializando modales de usuario por primera vez');
         initializeUserModals();
         window.userModalsInitialized = true;
+        console.log('✅ [USER-MGMT] Modales inicializados');
+    } else {
+        console.log('✅ [USER-MGMT] Modales ya estaban inicializados');
     }
 }
 
@@ -1424,18 +1455,28 @@ async function deleteUser(email) {
 
 // Mostrar modal de gestión de calendarios
 function showWorkspaceManagement() {
+    console.log('📅 [WORKSPACE-MGMT] Función showWorkspaceManagement llamada');
+    console.log('📅 [WORKSPACE-MGMT] Usuario actual:', currentUser);
+
     if (currentUser.role !== 'admin') {
+        console.warn('⚠️ [WORKSPACE-MGMT] Usuario no es admin, rol:', currentUser.role);
         alert('No tienes permisos para gestionar calendarios');
         return;
     }
 
+    console.log('📅 [WORKSPACE-MGMT] Renderizando lista de calendarios...');
     renderWorkspacesList();
+    console.log('📅 [WORKSPACE-MGMT] Abriendo modal...');
     document.getElementById('workspaceManagementModal').classList.add('active');
 
     // Inicializar modales solo la primera vez
     if (!window.workspaceModalsInitialized) {
+        console.log('🔧 [WORKSPACE-MGMT] Inicializando modales de workspace por primera vez');
         initializeWorkspaceModals();
         window.workspaceModalsInitialized = true;
+        console.log('✅ [WORKSPACE-MGMT] Modales inicializados');
+    } else {
+        console.log('✅ [WORKSPACE-MGMT] Modales ya estaban inicializados');
     }
 }
 
