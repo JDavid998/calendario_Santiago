@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario de Contenido</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Pantalla de Login -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-header">
+                <svg class="login-logo" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <h1>Calendario de Contenido</h1>
+                <p>Inicia sesión para continuar</p>
+            </div>
+            <div class="login-form">
+                <div class="form-group">
+                    <label for="loginUsername">Usuario</label>
+                    <input type="text" id="loginUsername" placeholder="Ingresa tu usuario" autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Contraseña</label>
+                    <input type="password" id="loginPassword" placeholder="Ingresa tu contraseña"
+                        autocomplete="current-password">
+                </div>
+                <div id="loginError" class="login-error"></div>
+                <button onclick="processLogin()" class="btn-login">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                        <polyline points="10 17 15 12 10 7"></polyline>
+                        <line x1="15" y1="12" x2="3" y2="12"></line>
+                    </svg>
+                    Iniciar Sesión
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selector de Workspace -->
+    <div id="workspaceSelector" class="workspace-selector">
+        <div class="workspace-selector-content">
+            <h1>Selecciona tu Espacio de Trabajo</h1>
+            <p class="workspace-subtitle">Elige el calendario que deseas gestionar</p>
+            <div class="workspace-buttons">
+                <button class="workspace-btn personal" data-workspace="personal" onclick="selectWorkspace('personal')">
+                    <svg class="workspace-icon" width="64" height="64" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <div class="workspace-name">Personal</div>
+                    <div class="workspace-desc">Mi calendario personal</div>
+                </button>
+                <button class="workspace-btn maacline" data-workspace="maacline" onclick="selectWorkspace('maacline')">
+                    <svg class="workspace-icon" width="64" height="64" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                    </svg>
+                    <div class="workspace-name">MAAC Line</div>
+                    <div class="workspace-desc">Calendario empresarial</div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenedor Principal -->
+    <div id="mainContainer" class="container" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <svg class="header-logo" width="32" height="32" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    <div>
+                        <h1>Calendario de Contenido</h1>
+                        <p class="subtitle">Organiza y planifica tu contenido</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="user-info">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <div>
+                            <div id="userName" class="user-name">Admin</div>
+                            <div id="userRole" class="user-role">Administrador</div>
+                        </div>
+                    </div>
+                    <span id="workspaceName" class="workspace-badge">Personal</span>
+                    <button onclick="showUserManagement()" class="btn-icon-header" title="Gestionar usuarios"
+                        id="btnUserManagement" style="display: none;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </button>
+                    <button onclick="changeWorkspace()" class="btn-icon-header" title="Cambiar calendario">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                    </button>
+                    <button onclick="logout()" class="btn-icon-header btn-logout-header" title="Cerrar sesión">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navegación de Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="calendario">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                Calendario
+            </button>
+            <button class="tab-btn" data-tab="guiones">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Guiones
+            </button>
+
+        </div>
+
+        <!-- Tab: Calendario -->
+        <div id="calendario" class="tab-content active">
+            <div class="calendar-controls">
+                <div class="control-group">
+                    <label for="monthSelect">Mes:</label>
+                    <select id="monthSelect">
+                        <option value="0">Enero</option>
+                        <option value="1">Febrero</option>
+                        <option value="2">Marzo</option>
+                        <option value="3">Abril</option>
+                        <option value="4">Mayo</option>
+                        <option value="5">Junio</option>
+                        <option value="6">Julio</option>
+                        <option value="7">Agosto</option>
+                        <option value="8">Septiembre</option>
+                        <option value="9">Octubre</option>
+                        <option value="10">Noviembre</option>
+                        <option value="11">Diciembre</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="yearSelect">Año:</label>
+                    <input type="number" id="yearSelect" min="2020" max="2050" value="2024">
+                </div>
+                <button id="todayBtn" class="btn-today">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    Hoy
+                </button>
+            </div>
+
+            <div class="calendar-grid">
+                <div class="day-header">Domingo</div>
+                <div class="day-header">Lunes</div>
+                <div class="day-header">Martes</div>
+                <div class="day-header">Miércoles</div>
+                <div class="day-header">Jueves</div>
+                <div class="day-header">Viernes</div>
+                <div class="day-header">Sábado</div>
+            </div>
+
+
+        </div>
+
+        <!-- Tab: Guiones -->
+        <div id="guiones" class="tab-content">
+            <div class="guiones-header">
+                <h2>Base de Datos de Guiones</h2>
+                <div class="guiones-controls">
+                    <select id="filterMonth" class="filter-select">
+                        <option value="all">Todos los meses</option>
+                        <option value="0">Enero</option>
+                        <option value="1">Febrero</option>
+                        <option value="2">Marzo</option>
+                        <option value="3">Abril</option>
+                        <option value="4">Mayo</option>
+                        <option value="5">Junio</option>
+                        <option value="6">Julio</option>
+                        <option value="7">Agosto</option>
+                        <option value="8">Septiembre</option>
+                        <option value="9">Octubre</option>
+                        <option value="10">Noviembre</option>
+                        <option value="11">Diciembre</option>
+                    </select>
+                    <button id="addGuionBtn" class="btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Nuevo Guión
+                    </button>
+                </div>
+            </div>
+
+            <div class="guiones-table-container">
+                <table class="guiones-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Idea/Título</th>
+                            <th>Guión Completo</th>
+                            <th>Plataforma</th>
+                            <th>Estado</th>
+                            <th>Notas</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="guionesTableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="guiones-footer">
+                <p><strong>TIP:</strong> Los guiones se sincronizan automáticamente con el calendario</p>
+                <p><strong>ESTADOS:</strong> Idea | En proceso | Listo | Programado | Publicado</p>
+            </div>
+        </div>
+
+
+    </div>
+
+    <!-- Modal para editar día -->
+    <div id="dayModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Editar Día</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="dayNotesList" class="notes-list">
+                    <!-- Las notas se cargarán aquí dinámicamente -->
+                </div>
+
+                <div class="add-note-form">
+                    <label for="newNoteInput">Nueva Nota:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="newNoteInput" placeholder="Escribe una nota..." class="form-control">
+                        <button id="addNoteBtn" class="btn-primary" style="white-space: nowrap;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Agregar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-close btn-secondary">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para agregar/editar guión -->
+    <div id="guionModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="guionModalTitle">Nuevo Guión</h3>
+                <button class="modal-close-guion">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="guionFecha">Fecha:</label>
+                    <input type="date" id="guionFecha" required>
+                </div>
+                <div class="form-group">
+                    <label for="guionTitulo">Idea/Título:</label>
+                    <input type="text" id="guionTitulo" placeholder="Ej: Tutorial de maquillaje" required>
+                </div>
+                <div class="form-group">
+                    <label for="guionContenido">Guión Completo:</label>
+                    <textarea id="guionContenido" rows="6" placeholder="Escribe el guión completo..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Plataforma(s):</label>
+                        <div id="guionPlataformasContainer"
+                            style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; background: var(--bg-tertiary); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;"><input
+                                    type="checkbox" name="plataforma" value="Instagram"> Instagram</label>
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;"><input
+                                    type="checkbox" name="plataforma" value="TikTok"> TikTok</label>
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;"><input
+                                    type="checkbox" name="plataforma" value="Facebook"> Facebook</label>
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;"><input
+                                    type="checkbox" name="plataforma" value="YouTube"> YouTube</label>
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;"><input
+                                    type="checkbox" name="plataforma" value="Twitter"> Twitter</label>
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;"><input
+                                    type="checkbox" name="plataforma" value="LinkedIn"> LinkedIn</label>
+                            <label
+                                style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;"><input
+                                    type="checkbox" name="plataforma" value="Threads"> Threads</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="guionEstado">Estado:</label>
+                        <select id="guionEstado">
+                            <option value="Idea">Idea</option>
+                            <option value="En proceso">En proceso</option>
+                            <option value="Listo">Listo</option>
+                            <option value="Programado">Programado</option>
+                            <option value="Publicado">Publicado</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="guionNotas">Notas adicionales:</label>
+                    <input type="text" id="guionNotas" placeholder="Ej: Grabar video, usar carousel, etc.">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveGuionBtn" class="btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 0-2-2V5a2 2 0 0 0 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    Guardar Guión
+                </button>
+                <button class="modal-close-guion btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para gestionar usuarios (solo admin) -->
+    <div id="userManagementModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Gestión de Usuarios</h3>
+                <button class="modal-close-users">&times;</button>
+            </div>
+            <div class="modal-body">
+                <button id="addUserBtn" class="btn-primary" style="margin-bottom: 20px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Agregar Usuario
+                </button>
+                <div class="users-list" id="usersList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-close-users btn-secondary">Cerrar</button>
+            </div>
+        </div>
+    </div> <!-- Modal para ver guión (Detalles) -->
+    <div id="viewGuionModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="viewGuionTitle">Detalles del Guión</h3>
+                <button class="modal-close-view-guion">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="view-detail-group">
+                    <label>Fecha:</label>
+                    <div id="viewGuionFecha" class="view-detail-content"></div>
+                </div>
+                <div class="view-detail-group">
+                    <label>Plataformas:</label>
+                    <div id="viewGuionPlataformas" class="view-detail-content"></div>
+                </div>
+                <div class="view-detail-group">
+                    <label>Estado:</label>
+                    <div id="viewGuionEstado" class="view-detail-content"></div>
+                </div>
+                <div class="view-detail-group">
+                    <label>Guión Completo:</label>
+                    <div id="viewGuionContenido" class="view-detail-content content-scrollable"></div>
+                </div>
+                <div class="view-detail-group">
+                    <label>Notas:</label>
+                    <div id="viewGuionNotas" class="view-detail-content"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-close-view-guion btn-secondary">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal para agregar/editar usuario -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="userModalTitle">Nuevo Usuario</h3>
+                <button class="modal-close-user">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="newUserEmail">Email:</label>
+                    <input type="email" id="newUserEmail" placeholder="usuario@ejemplo.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="newUserPassword">Contraseña:</label>
+                    <input type="password" id="newUserPassword" placeholder="Contraseña segura" required>
+                </div>
+                <div class="form-group">
+                    <label for="newUserName">Nombre:</label>
+                    <input type="text" id="newUserName" placeholder="Nombre del usuario" required>
+                </div>
+                <div class="form-group">
+                    <label for="newUserRole">Rol:</label>
+                    <select id="newUserRole">
+                        <option value="client">Cliente</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Acceso a calendarios:</label>
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="accessPersonal" value="personal">
+                            <span>Personal</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="accessMaacline" value="maacline" checked>
+                            <span>MAAC Line</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveUserBtn" class="btn-primary">Guardar Usuario</button>
+                <button class="modal-close-user btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,13 @@
+# .gitignore
+# Archivos temporales de edición
+script_backup.js
+*.tmp
+*.log
+
+# Carpetas de configuración del sistema
+.DS_Store
+Thumbs.db
+
+# Configuración de herramientas (opcional si no quieres compartirlas)
+.vscode/
+.idea/
