@@ -729,10 +729,15 @@ function renderGuiones() {
 
         actions += `</div>`;
 
+        // Truncar contenido para vista compacta
+        const truncatedContent = guion.contenido && guion.contenido.length > 80
+            ? guion.contenido.substring(0, 80) + '...'
+            : (guion.contenido || '');
+
         row.innerHTML = `
             <td>${formattedDate}</td>
             <td><strong>${guion.titulo}</strong></td>
-            <td style="max-width: 300px; white-space: pre-wrap;">${guion.contenido}</td>
+            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${truncatedContent}</td>
             <td>${platText}</td>
             <td><span class="status-badge ${statusClass}">${guion.estado}</span></td>
             <td>${guion.notas}</td>
@@ -824,6 +829,35 @@ function viewGuion(id) {
     document.getElementById('viewGuionContenido').textContent = guion.contenido || 'Sin contenido';
     document.getElementById('viewGuionNotas').textContent = guion.notas || 'Sin notas adicionales';
 
+    document.getElementById('viewGuionModal').classList.add('active');
+}
+
+// Ver guión (solo lectura)
+function viewGuion(id) {
+    const guion = guiones.find(g => g.id === id);
+    if (!guion) return;
+
+    // Llenar el modal de vista
+    document.getElementById('viewGuionTitle').textContent = guion.titulo;
+    document.getElementById('viewGuionFecha').textContent = formatDate(guion.fecha);
+
+    // Mostrar plataformas
+    const platText = Array.isArray(guion.plataformas)
+        ? guion.plataformas.join(', ')
+        : (guion.plataforma || 'No especificado');
+    document.getElementById('viewGuionPlataformas').textContent = platText;
+
+    // Mostrar estado con badge
+    const statusClass = getStatusClass(guion.estado);
+    document.getElementById('viewGuionEstado').innerHTML = `<span class="status-badge ${statusClass}">${guion.estado}</span>`;
+
+    // Mostrar contenido completo (con saltos de línea preservados)
+    document.getElementById('viewGuionContenido').textContent = guion.contenido || 'Sin contenido';
+
+    // Mostrar notas
+    document.getElementById('viewGuionNotas').textContent = guion.notas || 'Sin notas';
+
+    // Abrir modal
     document.getElementById('viewGuionModal').classList.add('active');
 }
 
