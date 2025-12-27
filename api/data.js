@@ -1,13 +1,6 @@
 import { neon } from '@neondatabase/serverless';
 
 export default async function handler(req, res) {
-    if (!process.env.DATABASE_URL) {
-        return res.status(500).json({ error: 'Falta la variable DATABASE_URL en Vercel. Configúrala en Settings > Environment Variables.' });
-    }
-
-    const sql = neon(process.env.DATABASE_URL);
-
-    // Configurar CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -16,9 +9,24 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
+    if (!process.env.DATABASE_URL) {
+        return res.status(500).json({ error: 'Configuración incompleta: Falta DATABASE_URL en Vercel.' });
+    }
+
+    let sql;
+    try {
+        sql = neon(process.env.DATABASE_URL);
+    } catch (e) {
+        return res.status(500).json({ error: 'Error al inicializar conexión: ' + e.message });
+    }
+
     const { action, workspace, email } = req.query;
 
     try {
+        if (action === 'ping') {
+            await sql`SELECT 1`;
+            return res.status(200).json({ success: true, message: 'Conectado a Neon DB correctamente' });
+        }
         // --- USUARIOS ---
         if (action === 'getUsers') {
             const users = await sql`SELECT * FROM users`;

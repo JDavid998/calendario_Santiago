@@ -141,6 +141,33 @@ async function saveUsersToStorage(users, newUser = null) {
     }
 }
 
+// Probar conexión a la DB
+async function testConnection() {
+    const errorMsg = document.getElementById('loginError');
+    errorMsg.style.display = 'block';
+    errorMsg.textContent = 'Probando conexión...';
+    errorMsg.style.color = 'var(--primary-light)';
+
+    try {
+        const response = await fetch('/api/data?action=ping');
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || 'Error del servidor');
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            errorMsg.textContent = '✅ ' + data.message;
+            errorMsg.style.color = '#4ade80';
+        }
+    } catch (e) {
+        errorMsg.textContent = '❌ ' + e.message;
+        errorMsg.style.color = '#ff4444';
+    }
+}
+
 // Cerrar sesión
 function logout() {
     if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
