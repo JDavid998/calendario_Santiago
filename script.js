@@ -536,10 +536,23 @@ function initializeModals() {
 // GESTIÓN CENTRALIZADA DE MODALES
 // ============================================
 
-function openModal(modalId) {
-    console.log(`🔓 [MODAL] Intentando abrir modal: ${modalId}`);
 
-    // 1. Cerrar todos los otros modales (fuerza bruta)
+
+// ============================================
+// GESTIÓN CENTRALIZADA DE MODALES (NUCLEAR OPTION)
+// ============================================
+
+function openModal(modalId) {
+    console.log(`☢️ [MODAL NUCLEAR] Intentando abrir modal: ${modalId}`);
+
+    // 1. OBTENER EL MODAL
+    const modal = document.getElementById(modalId);
+    if (!modal) {
+        console.error(`❌ [MODAL] No se encontró el modal: ${modalId}`);
+        return;
+    }
+
+    // 2. CERRAR TODOS LOS OTROS MODALES
     const allModals = document.querySelectorAll('.modal');
     allModals.forEach(m => {
         if (m.id !== modalId) {
@@ -548,37 +561,41 @@ function openModal(modalId) {
         }
     });
 
-    // 2. Abrir el modal objetivo
-    const modal = document.getElementById(modalId);
-    if (!modal) {
-        console.error(`❌ [MODAL] No se encontró el modal: ${modalId}`);
-        return;
-    }
+    // 3. MOVER EL MODAL AL BODY (Para evitar problemas de stacking context)
+    document.body.appendChild(modal);
 
-    // 3. Forzar estilos directamente para asegurar visibilidad
-    modal.style.display = 'flex';
-    modal.style.zIndex = '9999';
-    modal.style.opacity = '1';
+    // 4. FORZAR ESTILOS INLINE AGRESIVOS (NUCLEAR)
+    // Reseteamos cualquier estilo previo que pueda estar causando problemas
+    modal.style.cssText = `
+        display: flex !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background-color: rgba(0, 0, 0, 0.7) !important;
+        z-index: 2147483647 !important; /* Max Z-Index seguro */
+        justify-content: center !important;
+        align-items: flex-start !important;
+        padding-top: 50px !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    `;
 
-    // 4. Agregar clase active después de un pequeño delay para permitir transiciones (si las hubiera)
-    // pero asegurando que ya es visible
-    requestAnimationFrame(() => {
-        modal.classList.add('active');
-        console.log(`✅ [MODAL] Modal ${modalId} abierto y forzado visible`);
+    // 5. AGREGAR CLASE ACTIVE (Por si acaso se usa para selectores internos)
+    modal.classList.add('active');
 
-        // Log de diagnóstico final
-        const style = window.getComputedStyle(modal);
-        console.log(`🔍 [MODAL] Estado final: Display=${style.display}, Opacity=${style.opacity}, ZIndex=${style.zIndex}`);
-    });
+    console.log(`✅ [MODAL NUCLEAR] Modal ${modalId} movido al body y forzado visible con estilos inline.`);
 }
 
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.remove('active');
-        setTimeout(() => {
-            modal.style.display = 'none';
-        }, 300); // Esperar transición
+        modal.style.display = 'none';
+        // Limpiamos el cssText agresivo para que no interfiera si se vuelve a abrir (aunque se reescribirá)
+        // Pero mantenemos display none
+        modal.style.display = 'none';
     }
 }
 
