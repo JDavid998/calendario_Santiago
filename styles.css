@@ -53,6 +53,27 @@ body {
     background: var(--bg-primary);
     min-height: 100vh;
     color: var(--text-primary);
+    font-size: 18px;
+    /* Aumentado de default (16px) */
+}
+
+/* Asegurar que los elementos de formulario usen la fuente */
+button,
+input,
+select,
+textarea {
+    font-family: 'Rufina', 'Inter', -apple-system, sans-serif;
+    font-size: 1rem;
+    /* Heredar tamaño aumentado */
+}
+
+/* Botones principales con fuente destacada si se desea, o mantener Rufina */
+.btn-login,
+.workspace-btn,
+.btn-today {
+    font-family: 'Rufina', sans-serif;
+    font-weight: bold;
+    font-size: 1.1rem;
 }
 
 /* ============================================
