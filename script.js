@@ -2512,161 +2512,230 @@ function renderStatsCharts() {
         activePlatforms = [...new Set(statistics.map(s => s.platform))];
     }
     if (activePlatforms.length === 0) return;
-
     // Destruir charts previos
     Object.values(chartInstances).forEach(chart => chart.destroy());
     chartInstances = {};
 
-    // 1. Gráfico General de Vistas por Plataforma (Doughnut)
-    const viewsCanvas = document.createElement('canvas');
-    viewsCanvas.id = 'chart-global-views';
+    // Filtrar estadísticas globales una sola vez
+    const filteredStats = statistics.filter(s => {
+        const guion = guiones.find(g => g.id === s.guion_id);
+        if (!guion || guion.estado !== 'Publicado') return false;
 
-    const viewsCard = document.createElement('div');
-    viewsCard.className = 'chart-card';
-    viewsCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
-    viewsCard.innerHTML = `<h3 style="margin-bottom: 15px;">Vistas por Plataforma</h3>`;
+        let gDate;
+        try { gDate = new Date(guion.fecha + 'T12:00:00'); } catch (e) { return false; }
 
-    // Fix: Wrapper para evitar crecimiento infinito
-    const viewsContainer = document.createElement('div');
-    viewsContainer.style.position = 'relative';
-    viewsContainer.style.height = '300px';
-    viewsContainer.style.width = '100%';
-    viewsContainer.appendChild(viewsCanvas);
+        if (currentStatsFilterMonth !== 'all' && gDate.getMonth() !== parseInt(currentStatsFilterMonth)) return false;
+        if (currentStatsFilterYear !== 'all' && gDate.getFullYear() !== parseInt(currentStatsFilterYear)) return false;
+        if (currentStatsFilterFormat !== 'all' && (guion.formato || 'Carrusel') !== currentStatsFilterFormat) return false;
 
-    viewsCard.appendChild(viewsContainer);
-    chartsGrid.appendChild(viewsCard);
+        return true;
+    });
 
-    // Preparar datos
-    const platformLabels = [];
-    const platformViews = [];
-    const platformEngagement = [];
-    // Paleta de colores atractiva
-    const backgroundColors = [
-        'rgba(255, 99, 132, 0.7)',   // Rojo/Rosa
-        'rgba(54, 162, 235, 0.7)',   // Azul
-        'rgba(255, 206, 86, 0.7)',   // Amarillo
-        'rgba(75, 192, 192, 0.7)',   // Verde Teal
-        'rgba(153, 102, 255, 0.7)',  // Violeta
-        'rgba(255, 159, 64, 0.7)'    // Naranja
-    ];
+    // 1. Gráfico Unificado: Vistas/Engagement (adapta según filtro)
+    const unifiedCanvas = document.createElement('canvas');
+    unifiedCanvas.id = 'chart-unified';
 
-    activePlatforms.forEach(p => {
-        // Filtrar stats de esa plataforma (respetando la lógica de filtros globales implícita en 'statistics' filtrados por la lista, 
-        // pero para simplificar, usamos toda la data disponible para esa plataforma que cumpla condiciones básicas)
-        const pStats = statistics.filter(s => {
-            if (s.platform !== p) return false;
-            // Verificar que el guion esté publicado
-            const guion = guiones.find(g => g.id === s.guion_id);
-            if (!guion || guion.estado !== 'Publicado') return false;
+    const unifiedCard = document.createElement('div');
+    unifiedCard.className = 'chart-card';
+    unifiedCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
 
-            // Filtros globales (opcional, pero consistente con la vista)
-            let gDate;
-            try { gDate = new Date(guion.fecha + 'T12:00:00'); } catch (e) { return false; }
+    const unifiedContainer = document.createElement('div');
+    unifiedContainer.style.position = 'relative';
+    unifiedContainer.style.height = '300px';
+    unifiedContainer.style.width = '100%';
+    unifiedContainer.appendChild(unifiedCanvas);
 
-            if (currentStatsFilterMonth !== 'all' && gDate.getMonth() !== parseInt(currentStatsFilterMonth)) return false;
-            if (currentStatsFilterYear !== 'all' && gDate.getFullYear() !== parseInt(currentStatsFilterYear)) return false;
-            if (currentStatsFilterFormat !== 'all' && (guion.formato || 'Carrusel') !== currentStatsFilterFormat) return false;
+    unifiedCard.appendChild(unifiedContainer);
+    chartsGrid.appendChild(unifiedCard);
 
-            return true;
+    const ctxUnified = unifiedCanvas.getContext('2d');
+
+    // Determinar qué mostrar según el filtro de plataforma
+    if (currentStatsFilterPlatform === 'all') {
+        // Modo: Vistas por Plataforma + Engagement Promedio
+        unifiedCard.insertBefore(
+            Object.assign(document.createElement('h3'), {
+                textContent: 'Vistas por Plataforma',
+                style: 'margin-bottom: 15px;'
+            }),
+            unifiedContainer
+        );
+
+        // Determine active platforms based on filteredStats
+        const activePlatforms = [...new Set(filteredStats.map(s => s.platform))];
+
+        const viewsByPlatform = {};
+        activePlatforms.forEach(p => {
+            viewsByPlatform[p] = filteredStats
+                .filter(s => s.platform === p)
+                .reduce((sum, s) => sum + (s.metrics.views || 0), 0);
         });
 
-        const totalV = pStats.reduce((sum, s) => sum + (s.metrics.views || 0), 0);
-        const avgEng = pStats.length ? (pStats.reduce((sum, s) => sum + parseFloat(s.metrics.engagement_rate || 0), 0) / pStats.length) : 0;
+        // Colores corporativos
+        const platformColors = {
+            'Instagram': '#e1306c',
+            'TikTok': '#00f2ea',
+            'Facebook': '#1877f2'
+        };
 
-        platformLabels.push(p);
-        platformViews.push(totalV);
-        platformEngagement.push(avgEng.toFixed(2));
-    });
-
-    // Chart Vistas
-    const ctxViews = viewsCanvas.getContext('2d');
-    chartInstances['global-views'] = new Chart(ctxViews, {
-        type: 'doughnut',
-        data: {
-            labels: platformLabels,
-            datasets: [{
-                data: platformViews,
-                backgroundColor: backgroundColors,
-                borderColor: 'var(--bg-secondary)',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'right', labels: { color: '#94a3b8', padding: 15, font: { size: 11 } } },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            const label = context.label || '';
-                            const value = context.parsed || 0;
-                            return `${label}: ${value.toLocaleString()} vistas`;
+        chartInstances['unified'] = new Chart(ctxUnified, {
+            type: 'doughnut',
+            data: {
+                labels: activePlatforms,
+                datasets: [{
+                    data: activePlatforms.map(p => viewsByPlatform[p]),
+                    backgroundColor: activePlatforms.map(p => platformColors[p] || '#14b8a6'),
+                    borderColor: 'var(--bg-secondary)',
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { color: '#94a3b8', font: { size: 12 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                return `${context.label}: ${context.parsed.toLocaleString()} vistas (${percentage}%)`;
+                            }
                         }
+                    },
+                    datalabels: {
+                        color: '#fff',
+                        font: { weight: 'bold', size: 14 },
+                        formatter: (value) => value.toLocaleString()
+                    }
+                }
+            }
+        });
+    } else {
+        // Modo: Vistas por Reel Individual (filtrado por plataforma)
+        unifiedCard.insertBefore(
+            Object.assign(document.createElement('h3'), {
+                textContent: `Rendimiento de Reels - ${currentStatsFilterPlatform}`,
+                style: 'margin-bottom: 15px;'
+            }),
+            unifiedContainer
+        );
+
+        // Obtener reels individuales de la plataforma seleccionada
+        const reelStats = filteredStats.filter(s => s.platform === currentStatsFilterPlatform);
+
+        const labels = [];
+        const viewsData = [];
+        const engagementData = [];
+
+        reelStats.forEach(stat => {
+            const guion = guiones.find(g => g.id === stat.guion_id);
+            if (guion) {
+                labels.push(guion.titulo.length > 20 ? guion.titulo.substring(0, 20) + '...' : guion.titulo);
+                viewsData.push(stat.metrics.views || 0);
+                engagementData.push(parseFloat(stat.metrics.engagement_rate) || 0);
+            }
+        });
+
+        // Color corporativo de la plataforma seleccionada
+        const platformColor = {
+            'Instagram': '#e1306c',
+            'TikTok': '#00f2ea',
+            'Facebook': '#1877f2'
+        }[currentStatsFilterPlatform] || '#14b8a6';
+
+        chartInstances['unified'] = new Chart(ctxUnified, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Vistas',
+                        data: viewsData,
+                        backgroundColor: platformColor,
+                        borderColor: platformColor,
+                        borderWidth: 2,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Engagement (%)',
+                        data: engagementData,
+                        backgroundColor: 'rgba(148, 163, 184, 0.7)',
+                        borderColor: '#94a3b8',
+                        borderWidth: 2,
+                        yAxisID: 'y1',
+                        type: 'line'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        position: 'left',
+                        grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                        ticks: { color: '#94a3b8' },
+                        title: {
+                            display: true,
+                            text: 'Vistas',
+                            color: '#94a3b8'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        position: 'right',
+                        grid: { display: false },
+                        ticks: {
+                            color: '#94a3b8',
+                            callback: function (value) {
+                                return value + '%';
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Engagement %',
+                            color: '#94a3b8'
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8', maxRotation: 45, minRotation: 45 }
                     }
                 },
-                datalabels: {
-                    color: '#fff',
-                    font: { weight: 'bold', size: 11 },
-                    formatter: (value, ctx) => {
-                        if (value === 0) return '';
-                        return value.toLocaleString();
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { color: '#94a3b8' }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.datasetIndex === 1) {
+                                    label += context.parsed.y.toFixed(2) + '%';
+                                } else {
+                                    label += context.parsed.y.toLocaleString() + ' vistas';
+                                }
+                                return label;
+                            }
+                        }
                     }
                 }
             }
-        }
-    });
-
-    // 2. Gráfico de Engagement Promedio por Plataforma (Bar)
-    const engCanvas = document.createElement('canvas');
-    engCanvas.id = 'chart-global-engagement';
-
-    const engCard = document.createElement('div');
-    engCard.className = 'chart-card';
-    engCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
-    engCard.innerHTML = `<h3 style="margin-bottom: 15px;">Engagement Promedio (%)</h3>`;
-
-    // Fix: Wrapper para evitar crecimiento infinito
-    const engContainer = document.createElement('div');
-    engContainer.style.position = 'relative';
-    engContainer.style.height = '300px';
-    engContainer.style.width = '100%';
-    engContainer.appendChild(engCanvas);
-
-    engCard.appendChild(engContainer);
-    chartsGrid.appendChild(engCard);
-
-    const ctxEng = engCanvas.getContext('2d');
-    chartInstances['global-engagement'] = new Chart(ctxEng, {
-        type: 'bar',
-        data: {
-            labels: platformLabels,
-            datasets: [{
-                label: 'Engagement Rate %',
-                data: platformEngagement,
-                backgroundColor: 'rgba(16, 185, 129, 0.7)',
-                borderRadius: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-            },
-            plugins: {
-                legend: { display: false },
-                datalabels: {
-                    anchor: 'end',
-                    align: 'top',
-                    color: '#94a3b8',
-                    font: { weight: 'bold', size: 11 },
-                    formatter: (value) => value + '%'
-                }
-            }
-        }
-    });
+        });
+    }
 
     // 3. Gráfico de Crecimiento de Seguidores por Mes (Line Chart)
     const followersCanvas = document.createElement('canvas');
@@ -2692,6 +2761,9 @@ function renderStatsCharts() {
     // Construir datasets dinámicamente según filtro de plataforma
     const datasets = [];
 
+    // Ahora agregamos todas las redes siempre, o filtramos según la plataforma seleccionada
+    // PERO conservamos la lógica de colores y el cambio de TikTok a blanco
+
     if (currentStatsFilterPlatform === 'all' || currentStatsFilterPlatform === 'Instagram') {
         datasets.push({
             label: 'Instagram',
@@ -2709,8 +2781,8 @@ function renderStatsCharts() {
         datasets.push({
             label: 'TikTok',
             data: monthlyData.tiktok,
-            borderColor: '#000000',
-            backgroundColor: 'rgba(0, 0, 0, 0.1)',
+            borderColor: '#ffffff', // COLOR CAMBIADO A BLANCO
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
             fill: true,
             tension: 0.4,
             pointRadius: 4,
@@ -2745,8 +2817,7 @@ function renderStatsCharts() {
                 y: {
                     beginAtZero: true,
                     grid: { color: 'rgba(255,255,255,0.05)' },
-                    ticks: { color: '#94a3b8' },
-                    title: { display: true, text: 'Nuevos Seguidores', color: '#94a3b8' }
+                    ticks: { color: '#94a3b8' }
                 },
                 x: {
                     grid: { display: false },
@@ -2756,31 +2827,20 @@ function renderStatsCharts() {
             plugins: {
                 legend: {
                     position: 'top',
-                    labels: { color: '#94a3b8' }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            const label = context.dataset.label || '';
-                            const currentValue = context.parsed.y || 0;
-                            const dataIndex = context.dataIndex;
+                    if(dataIndex > 0) {
+        const previousValue = context.dataset.data[dataIndex - 1] || 0;
+        dailyGain = currentValue - previousValue;
+    }
 
-                            // Calcular seguidores ganados ese día
-                            let dailyGain = currentValue;
-                            if (dataIndex > 0) {
-                                const previousValue = context.dataset.data[dataIndex - 1] || 0;
-                                dailyGain = currentValue - previousValue;
-                            }
-
-                            return [
-                                `${label}:`,
-                                `  Ganaste hoy: +${dailyGain.toLocaleString()}`,
-                                `  Total acumulado: ${currentValue.toLocaleString()}`
-                            ];
-                        },
-                        footer: function (tooltipItems) {
-                            return 'Incluye reels + orgánicos';
-                        }
+    return [
+        `${label}:`,
+        `  Ganaste hoy: +${dailyGain.toLocaleString()}`,
+        `  Total acumulado: ${currentValue.toLocaleString()}`
+    ];
+},
+footer: function (tooltipItems) {
+    return 'Incluye reels + orgánicos';
+}
                     }
                 }
             }
