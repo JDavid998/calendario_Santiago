@@ -2458,6 +2458,28 @@ function renderStatsSummary() {
     });
 }
 
+// Funciones globales para formateo de tiempo (HH:MM:SS)
+function formatSecondsToHMS(seconds) {
+    if (!seconds) return '00:00:00';
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return [h, m, s].map(v => v.toString().padStart(2, '0')).join(':');
+}
+
+function parseHMSToSeconds(hmsString) {
+    if (!hmsString) return 0;
+    const parts = hmsString.split(':').map(Number);
+    if (parts.length === 3) {
+        return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    } else if (parts.length === 2) {
+        return parts[0] * 60 + parts[1];
+    } else if (parts.length === 1) {
+        return parts[0];
+    }
+    return 0;
+}
+
 function openStatsModal(guionId) {
     const guion = guiones.find(g => g.id === guionId);
     if (!guion) return;
@@ -2482,33 +2504,6 @@ function openStatsModal(guionId) {
         platformSection.style.borderRadius = '8px';
 
         let fieldsHTML = '';
-
-        // Helper to format seconds to HH:MM:SS
-        function formatSecondsToHMS(seconds) {
-            if (!seconds) return '';
-            const h = Math.floor(seconds / 3600);
-            const m = Math.floor((seconds % 3600) / 60);
-            const s = Math.floor(seconds % 60);
-            // return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-            // Show hours only if needed, or always? User said HH:MM:SS.
-            return [h, m, s].map(v => v.toString().padStart(2, '0')).join(':');
-        }
-
-        // Helper to parse HH:MM:SS to seconds
-        function parseHMSToSeconds(hmsString) {
-            if (!hmsString) return 0;
-            const parts = hmsString.split(':').map(Number);
-            if (parts.length === 3) {
-                return parts[0] * 3600 + parts[1] * 60 + parts[2];
-            } else if (parts.length === 2) {
-                return parts[0] * 60 + parts[1];
-            } else if (parts.length === 1) {
-                return parts[0];
-            }
-            return 0;
-        }
-
-        // ... existing code ...
 
         // Helper para crear inputs (general)
         const createInput = (label, key, value) => `
@@ -3109,8 +3104,13 @@ function renderStatsCharts() {
                     y: {
                         beginAtZero: true,
                         grid: { color: 'rgba(255,255,255,0.05)' },
-                        ticks: { color: '#94a3b8' },
-                        title: { display: true, text: 'Segundos', color: '#94a3b8' }
+                        ticks: {
+                            color: '#94a3b8',
+                            callback: function (value) {
+                                return formatSecondsToHMS(value);
+                            }
+                        },
+                        title: { display: true, text: 'Tiempo (HH:MM:SS)', color: '#94a3b8' }
                     },
                     x: {
                         grid: { display: false },
