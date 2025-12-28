@@ -2287,18 +2287,45 @@ function renderStatsCharts() {
     const activePlatforms = [...new Set(statistics.map(s => s.platform))];
     if (activePlatforms.length === 0) return;
 
+    // Destruir charts previos
     Object.values(chartInstances).forEach(chart => chart.destroy());
     chartInstances = {};
 
-    activePlatforms.forEach(platform => {
-        if (currentStatsFilterPlatform !== 'all' && platform !== currentStatsFilterPlatform) return;
+    // 1. Gráfico General de Vistas por Plataforma (Doughnut)
+    const viewsCanvas = document.createElement('canvas');
+    viewsCanvas.id = 'chart-global-views';
 
-        const platformStats = statistics.filter(s => {
-            if (s.platform !== platform) return false;
+    const viewsCard = document.createElement('div');
+    viewsCard.className = 'chart-card';
+    viewsCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
+    viewsCard.innerHTML = `<h3 style="margin-bottom: 15px;">Vistas por Plataforma</h3>`;
+    viewsCard.appendChild(viewsCanvas);
+    chartsGrid.appendChild(viewsCard);
+
+    // Preparar datos
+    const platformLabels = [];
+    const platformViews = [];
+    const platformEngagement = [];
+    // Paleta de colores atractiva
+    const backgroundColors = [
+        'rgba(255, 99, 132, 0.7)',   // Rojo/Rosa
+        'rgba(54, 162, 235, 0.7)',   // Azul
+        'rgba(255, 206, 86, 0.7)',   // Amarillo
+        'rgba(75, 192, 192, 0.7)',   // Verde Teal
+        'rgba(153, 102, 255, 0.7)',  // Violeta
+        'rgba(255, 159, 64, 0.7)'    // Naranja
+    ];
+
+    activePlatforms.forEach(p => {
+        // Filtrar stats de esa plataforma (respetando la lógica de filtros globales implícita en 'statistics' filtrados por la lista, 
+        // pero para simplificar, usamos toda la data disponible para esa plataforma que cumpla condiciones básicas)
+        const pStats = statistics.filter(s => {
+            if (s.platform !== p) return false;
+            // Verificar que el guion esté publicado
             const guion = guiones.find(g => g.id === s.guion_id);
-            if (!guion) return false;
-            if (guion.estado !== 'Publicado') return false;
+            if (!guion || guion.estado !== 'Publicado') return false;
 
+            // Filtros globales (opcional, pero consistente con la vista)
             let gDate;
             try { gDate = new Date(guion.fecha + 'T12:00:00'); } catch (e) { return false; }
 
@@ -2309,65 +2336,67 @@ function renderStatsCharts() {
             return true;
         });
 
-        if (platformStats.length === 0) return;
+        const totalV = pStats.reduce((sum, s) => sum + (s.metrics.views || 0), 0);
+        const avgEng = pStats.length ? (pStats.reduce((sum, s) => sum + parseFloat(s.metrics.engagement_rate || 0), 0) / pStats.length) : 0;
 
-        const chartCard = document.createElement('div');
-        chartCard.className = 'chart-card';
-        chartCard.style.background = 'var(--bg-secondary)';
-        chartCard.style.padding = '20px';
-        chartCard.style.borderRadius = '12px';
-        chartCard.style.border = '1px solid var(--border-color)';
+        platformLabels.push(p);
+        platformViews.push(totalV);
+        platformEngagement.push(avgEng.toFixed(2));
+    });
 
-        const totalViews = platformStats.reduce((sum, s) => sum + (s.metrics.views || 0), 0);
-        const avgEngagement = (platformStats.reduce((sum, s) => sum + parseFloat(s.metrics.engagement_rate || 0), 0) / (platformStats.length || 1)).toFixed(2);
-
-        chartCard.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="margin: 0;">${platform}</h3>
-                <div style="text-align: right; font-size: 0.8rem; color: var(--text-secondary);">
-                    <div>Total Vistas: <strong>${totalViews.toLocaleString()}</strong></div>
-                    <div>Avg Engagement: <strong>${avgEngagement}%</strong></div>
-                </div>
-            </div>
-            <canvas id="chart-${platform}"></canvas>
-        `;
-        chartsGrid.appendChild(chartCard);
-
-        const ctx = chartCard.querySelector('canvas').getContext('2d');
-        const labels = [];
-        const dataViews = [];
-        const dataEngagement = [];
-
-        platformStats.forEach(stat => {
-            const guion = guiones.find(g => g.id === stat.guion_id);
-            if (guion) {
-                let label = guion.titulo;
-                if (label.length > 15) label = label.substring(0, 15) + '...';
-                labels.push(label);
-                dataViews.push(stat.metrics.views || 0);
-                dataEngagement.push(stat.metrics.engagement_rate || 0);
+    // Chart Vistas
+    const ctxViews = viewsCanvas.getContext('2d');
+    chartInstances['global-views'] = new Chart(ctxViews, {
+        type: 'doughnut',
+        data: {
+            labels: platformLabels,
+            datasets: [{
+                data: platformViews,
+                backgroundColor: backgroundColors,
+                borderColor: 'var(--bg-secondary)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right', labels: { color: '#94a3b8' } }
             }
-        });
+        }
+    });
 
-        chartInstances[platform] = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [
-                    { label: 'Vistas', data: dataViews, backgroundColor: 'rgba(54, 162, 235, 0.5)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1, yAxisID: 'y' },
-                    { label: 'Engagement (%)', data: dataEngagement, type: 'line', borderColor: 'rgba(255, 99, 132, 1)', borderWidth: 2, tension: 0.1, yAxisID: 'y1' }
-                ]
+    // 2. Gráfico de Engagement Promedio por Plataforma (Bar)
+    const engCanvas = document.createElement('canvas');
+    engCanvas.id = 'chart-global-engagement';
+
+    const engCard = document.createElement('div');
+    engCard.className = 'chart-card';
+    engCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
+    engCard.innerHTML = `<h3 style="margin-bottom: 15px;">Engagement Promedio (%)</h3>`;
+    engCard.appendChild(engCanvas);
+    chartsGrid.appendChild(engCard);
+
+    const ctxEng = engCanvas.getContext('2d');
+    chartInstances['global-engagement'] = new Chart(ctxEng, {
+        type: 'bar',
+        data: {
+            labels: platformLabels,
+            datasets: [{
+                label: 'Engagement Rate %',
+                data: platformEngagement,
+                backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
             },
-            options: {
-                responsive: true,
-                interaction: { mode: 'index', intersect: false },
-                scales: {
-                    y: { type: 'linear', display: true, position: 'left', beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#94a3b8' } },
-                    y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, beginAtZero: true, suggestedMax: 10, ticks: { color: '#94a3b8' } },
-                    x: { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#94a3b8' } }
-                },
-                plugins: { legend: { labels: { color: '#e2e8f0' } } }
-            }
-        });
+            plugins: { legend: { display: false } }
+        }
     });
 }
