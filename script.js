@@ -1967,7 +1967,64 @@ function renderStatisticsUI() {
         renderStatsSummary();
     };
 
+    // Injectar Botón de Metas Globales
+    const filterContainer = document.querySelector('.stats-filters');
+    if (filterContainer && !document.getElementById('btnGlobalStats')) {
+        const btn = document.createElement('button');
+        btn.id = 'btnGlobalStats';
+        btn.className = 'btn-secondary';
+        btn.style.marginLeft = 'auto'; // Push to right
+        btn.innerHTML = '📊 Ingresar Totales Mes';
+        btn.onclick = () => openGlobalStatsModal();
+        filterContainer.appendChild(btn);
+    }
+
     updateAll();
+}
+
+// Variables Globales para Metricas de Negocio (Persistencia Local por ahora)
+let globalBusinessStats = JSON.parse(localStorage.getItem('globalBusinessStats') || '{}');
+
+function openGlobalStatsModal() {
+    openModal('globalStatsModal');
+    // Pre-fill con el mes actual del filtro o del sistema
+    const now = new Date();
+    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    document.getElementById('globalStatsMonth').value = currentMonthStr;
+    loadGlobalStatsForm(currentMonthStr);
+
+    document.getElementById('globalStatsMonth').onchange = (e) => loadGlobalStatsForm(e.target.value);
+}
+
+function loadGlobalStatsForm(monthStr) {
+    const data = globalBusinessStats[monthStr] || { ig: {}, tk: {} };
+    document.getElementById('gs-ig-messages').value = data.ig?.messages || 0;
+    document.getElementById('gs-ig-sales').value = data.ig?.sales || 0;
+    document.getElementById('gs-tk-messages').value = data.tk?.messages || 0;
+    document.getElementById('gs-tk-sales').value = data.tk?.sales || 0;
+}
+
+function saveGlobalStats() {
+    const monthStr = document.getElementById('globalStatsMonth').value;
+    if (!monthStr) return alert('Selecciona un mes');
+
+    const data = {
+        ig: {
+            messages: parseInt(document.getElementById('gs-ig-messages').value) || 0,
+            sales: parseInt(document.getElementById('gs-ig-sales').value) || 0
+        },
+        tk: {
+            messages: parseInt(document.getElementById('gs-tk-messages').value) || 0,
+            sales: parseInt(document.getElementById('gs-tk-sales').value) || 0
+        }
+    };
+
+    globalBusinessStats[monthStr] = data;
+    localStorage.setItem('globalBusinessStats', JSON.stringify(globalBusinessStats));
+
+    closeModal('globalStatsModal');
+    renderStatsSummary(); // Actualizar resumen
+    alert('Totales guardados correctamente');
 }
 
 function renderStatsEntryList() {
@@ -2072,12 +2129,38 @@ function renderStatsSummary() {
         filteredStats = filteredStats.filter(s => s.platform === currentStatsFilterPlatform);
     }
 
-    if (filteredStats.length === 0) return;
+    // --- CALCULO METRICAS GLOBALES (MENSAJES / VENTAS) ---
+    // Logica: Sumar mensajes/ventas de globalBusinessStats que coincidan con el filtro de fecha
+    let totalMessages = 0;
+    let totalSales = 0;
+
+    Object.entries(globalBusinessStats).forEach(([monthStr, data]) => {
+        const [year, month] = monthStr.split('-').map(Number);
+
+        // Aplicar filtros de fecha a las metricas globales
+        if (currentStatsFilterYear !== 'all' && year !== parseInt(currentStatsFilterYear)) return;
+        if (currentStatsFilterMonth !== 'all' && (month - 1) !== parseInt(currentStatsFilterMonth)) return;
+
+        // Sumar según plataforma
+        if (currentStatsFilterPlatform === 'all') {
+            totalMessages += (data.ig?.messages || 0) + (data.tk?.messages || 0);
+            totalSales += (data.ig?.sales || 0) + (data.tk?.sales || 0);
+        } else if (currentStatsFilterPlatform === 'Instagram') {
+            totalMessages += (data.ig?.messages || 0);
+            totalSales += (data.ig?.sales || 0);
+        } else if (currentStatsFilterPlatform === 'TikTok') {
+            totalMessages += (data.tk?.messages || 0);
+            totalSales += (data.tk?.sales || 0);
+        }
+    });
+
 
     // Calcular Totales
     const totalViews = filteredStats.reduce((sum, s) => sum + (s.metrics.views || 0), 0);
     const totalLikes = filteredStats.reduce((sum, s) => sum + (s.metrics.likes || 0), 0);
     const totalComments = filteredStats.reduce((sum, s) => sum + (s.metrics.comments || 0), 0);
+    const totalShares = filteredStats.reduce((sum, s) => sum + (s.metrics.shares || 0), 0);
+    const totalSaves = filteredStats.reduce((sum, s) => sum + (s.metrics.saves || 0), 0);
 
     // Avg Engagement
     const avgEngagement = (filteredStats.reduce((sum, s) => sum + parseFloat(s.metrics.engagement_rate || 0), 0) / (filteredStats.length || 1)).toFixed(2);
@@ -2086,14 +2169,19 @@ function renderStatsSummary() {
     const iconViews = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
     const iconLikes = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
     const iconComments = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>`;
+    const iconShares = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>`;
+    const iconSaves = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>`;
     const iconEng = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>`;
+    const iconMessages = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
+    const iconSales = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>`;
 
-    // Renderizar Cards
+    // Renderizar Cards (Incluyendo nuevos)
     const metrics = [
         { label: 'Vistas Totales', value: totalViews.toLocaleString(), icon: iconViews, color: '#3b82f6' },
         { label: 'Likes Totales', value: totalLikes.toLocaleString(), icon: iconLikes, color: '#ec4899' },
-        { label: 'Comentarios', value: totalComments.toLocaleString(), icon: iconComments, color: '#8b5cf6' },
-        { label: 'Engagement Prom.', value: avgEngagement + '%', icon: iconEng, color: '#10b981' }
+        { label: 'Mensajes', value: totalMessages.toLocaleString(), icon: iconMessages, color: '#8b5cf6' },
+        { label: 'Ventas Cerradas', value: totalSales.toLocaleString(), icon: iconSales, color: '#10b981' },
+        { label: 'Engagement', value: avgEngagement + '%', icon: iconEng, color: '#f59e0b' }
     ];
 
     metrics.forEach(m => {
