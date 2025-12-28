@@ -2514,367 +2514,479 @@ function renderStatsCharts() {
             const guion = guiones.find(g => g.id === s.guion_id);
             if (!guion || guion.estado !== 'Publicado') return false;
 
-            // Filtros globales (opcional, pero consistente con la vista)
-            let gDate;
-            try { gDate = new Date(guion.fecha + 'T12:00:00'); } catch (e) { return false; }
+            // Filtrar estadísticas globales una sola vez
+            const filteredStats = statistics.filter(s => {
+                const guion = guiones.find(g => g.id === s.guion_id);
+                if (!guion || guion.estado !== 'Publicado') return false;
 
-            if (currentStatsFilterMonth !== 'all' && gDate.getMonth() !== parseInt(currentStatsFilterMonth)) return false;
-            if (currentStatsFilterYear !== 'all' && gDate.getFullYear() !== parseInt(currentStatsFilterYear)) return false;
-            if (currentStatsFilterFormat !== 'all' && (guion.formato || 'Carrusel') !== currentStatsFilterFormat) return false;
+                let gDate;
+                try { gDate = new Date(guion.fecha + 'T12:00:00'); } catch (e) { return false; }
 
-            return true;
-        });
+                if (currentStatsFilterMonth !== 'all' && gDate.getMonth() !== parseInt(currentStatsFilterMonth)) return false;
+                if (currentStatsFilterYear !== 'all' && gDate.getFullYear() !== parseInt(currentStatsFilterYear)) return false;
+                if (currentStatsFilterFormat !== 'all' && (guion.formato || 'Carrusel') !== currentStatsFilterFormat) return false;
 
-        const totalV = pStats.reduce((sum, s) => sum + (s.metrics.views || 0), 0);
-        const avgEng = pStats.length ? (pStats.reduce((sum, s) => sum + parseFloat(s.metrics.engagement_rate || 0), 0) / pStats.length) : 0;
+                return true;
+            });
 
-        platformLabels.push(p);
-        platformViews.push(totalV);
-        platformEngagement.push(avgEng.toFixed(2));
-    });
+            // 1. Gráfico Unificado: Vistas/Engagement (adapta según filtro)
+            const unifiedCanvas = document.createElement('canvas');
+            unifiedCanvas.id = 'chart-unified';
 
-    // Chart Vistas
-    const ctxViews = viewsCanvas.getContext('2d');
-    chartInstances['global-views'] = new Chart(ctxViews, {
-        type: 'doughnut',
-        data: {
-            labels: platformLabels,
-            datasets: [{
-                data: platformViews,
-                backgroundColor: backgroundColors,
-                borderColor: 'var(--bg-secondary)',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'right', labels: { color: '#94a3b8', padding: 15, font: { size: 11 } } },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            const label = context.label || '';
-                            const value = context.parsed || 0;
-                            return `${label}: ${value.toLocaleString()} vistas`;
-                        }
-                    }
-                },
-                datalabels: {
-                    color: '#fff',
-                    font: { weight: 'bold', size: 11 },
-                    formatter: (value, ctx) => {
-                        if (value === 0) return '';
-                        return value.toLocaleString();
-                    }
-                }
-            }
-        }
-    });
+            const unifiedCard = document.createElement('div');
+            unifiedCard.className = 'chart-card';
+            unifiedCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
 
-    // 2. Gráfico de Engagement Promedio por Plataforma (Bar)
-    const engCanvas = document.createElement('canvas');
-    engCanvas.id = 'chart-global-engagement';
+            const unifiedContainer = document.createElement('div');
+            unifiedContainer.style.position = 'relative';
+            unifiedContainer.style.height = '300px';
+            unifiedContainer.style.width = '100%';
+            unifiedContainer.appendChild(unifiedCanvas);
 
-    const engCard = document.createElement('div');
-    engCard.className = 'chart-card';
-    engCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
-    engCard.innerHTML = `<h3 style="margin-bottom: 15px;">Engagement Promedio (%)</h3>`;
+            unifiedCard.appendChild(unifiedContainer);
+            chartsGrid.appendChild(unifiedCard);
 
-    // Fix: Wrapper para evitar crecimiento infinito
-    const engContainer = document.createElement('div');
-    engContainer.style.position = 'relative';
-    engContainer.style.height = '300px';
-    engContainer.style.width = '100%';
-    engContainer.appendChild(engCanvas);
+            const ctxUnified = unifiedCanvas.getContext('2d');
 
-    engCard.appendChild(engContainer);
-    chartsGrid.appendChild(engCard);
+            // Determinar qué mostrar según el filtro de plataforma
+            if (currentStatsFilterPlatform === 'all') {
+                // Modo: Vistas por Plataforma + Engagement Promedio
+                unifiedCard.insertBefore(
+                    Object.assign(document.createElement('h3'), {
+                        textContent: 'Vistas por Plataforma',
+                        style: 'margin-bottom: 15px;'
+                    }),
+                    unifiedContainer
+                );
 
-    const ctxEng = engCanvas.getContext('2d');
-    chartInstances['global-engagement'] = new Chart(ctxEng, {
-        type: 'bar',
-        data: {
-            labels: platformLabels,
-            datasets: [{
-                label: 'Engagement Rate %',
-                data: platformEngagement,
-                backgroundColor: 'rgba(16, 185, 129, 0.7)',
-                borderRadius: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-            },
-            plugins: {
-                legend: { display: false },
-                datalabels: {
-                    anchor: 'end',
-                    align: 'top',
-                    color: '#94a3b8',
-                    font: { weight: 'bold', size: 11 },
-                    formatter: (value) => value + '%'
-                }
-            }
-        }
-    });
+                // Determine active platforms based on filteredStats
+                const activePlatforms = [...new Set(filteredStats.map(s => s.platform))];
 
-    // 3. Gráfico de Crecimiento de Seguidores por Mes (Line Chart)
-    const followersCanvas = document.createElement('canvas');
-    followersCanvas.id = 'chart-followers-growth';
+                const viewsByPlatform = {};
+                activePlatforms.forEach(p => {
+                    viewsByPlatform[p] = filteredStats
+                        .filter(s => s.platform === p)
+                        .reduce((sum, s) => sum + (s.metrics.views || 0), 0);
+                });
 
-    const followersCard = document.createElement('div');
-    followersCard.className = 'chart-card';
-    followersCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
-    followersCard.innerHTML = `<h3 style="margin-bottom: 15px;">Crecimiento Acumulativo de Seguidores</h3>`;
+                // Colores corporativos
+                const platformColors = {
+                    'Instagram': '#e1306c',
+                    'TikTok': '#00f2ea',
+                    'Facebook': '#1877f2'
+                };
 
-    const followersContainer = document.createElement('div');
-    followersContainer.style.position = 'relative';
-    followersContainer.style.height = '300px';
-    followersContainer.style.width = '100%';
-    followersContainer.appendChild(followersCanvas);
-
-    followersCard.appendChild(followersContainer);
-    chartsGrid.appendChild(followersCard);
-
-    // Preparar datos mensuales
-    const monthlyData = calculateMonthlyFollowers();
-
-    // Construir datasets dinámicamente según filtro de plataforma
-    const datasets = [];
-
-    if (currentStatsFilterPlatform === 'all' || currentStatsFilterPlatform === 'Instagram') {
-        datasets.push({
-            label: 'Instagram',
-            data: monthlyData.instagram,
-            borderColor: '#e1306c',
-            backgroundColor: 'rgba(225, 48, 108, 0.1)',
-            fill: true,
-            tension: 0.4,
-            pointRadius: 4,
-            pointHoverRadius: 6
-        });
-    }
-
-    if (currentStatsFilterPlatform === 'all' || currentStatsFilterPlatform === 'TikTok') {
-        datasets.push({
-            label: 'TikTok',
-            data: monthlyData.tiktok,
-            borderColor: '#000000',
-            backgroundColor: 'rgba(0, 0, 0, 0.1)',
-            fill: true,
-            tension: 0.4,
-            pointRadius: 4,
-            pointHoverRadius: 6
-        });
-    }
-
-    if (currentStatsFilterPlatform === 'all' || currentStatsFilterPlatform === 'Facebook') {
-        datasets.push({
-            label: 'Facebook',
-            data: monthlyData.facebook,
-            borderColor: '#1877f2',
-            backgroundColor: 'rgba(24, 119, 242, 0.1)',
-            fill: true,
-            tension: 0.4,
-            pointRadius: 4,
-            pointHoverRadius: 6
-        });
-    }
-
-    const ctxFollowers = followersCanvas.getContext('2d');
-    chartInstances['followers-growth'] = new Chart(ctxFollowers, {
-        type: 'line',
-        data: {
-            labels: monthlyData.labels,
-            datasets: datasets
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: 'rgba(255,255,255,0.05)' },
-                    ticks: { color: '#94a3b8' },
-                    title: { display: true, text: 'Nuevos Seguidores', color: '#94a3b8' }
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: { color: '#94a3b8' }
-                }
-            },
-            plugins: {
-                legend: {
-                    position: 'top',
-                    labels: { color: '#94a3b8' }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            const label = context.dataset.label || '';
-                            const currentValue = context.parsed.y || 0;
-                            const dataIndex = context.dataIndex;
-
-                            // Calcular seguidores ganados ese día
-                            let dailyGain = currentValue;
-                            if (dataIndex > 0) {
-                                const previousValue = context.dataset.data[dataIndex - 1] || 0;
-                                dailyGain = currentValue - previousValue;
+                chartInstances['unified'] = new Chart(ctxUnified, {
+                    type: 'doughnut',
+                    data: {
+                        labels: activePlatforms,
+                        datasets: [{
+                            data: activePlatforms.map(p => viewsByPlatform[p]),
+                            backgroundColor: activePlatforms.map(p => platformColors[p] || '#14b8a6'),
+                            borderColor: 'var(--bg-secondary)',
+                            borderWidth: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { color: '#94a3b8', font: { size: 12 } }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                        return `${context.label}: ${context.parsed.toLocaleString()} vistas (${percentage}%)`;
+                                    }
+                                }
+                            },
+                            datalabels: {
+                                color: '#fff',
+                                font: { weight: 'bold', size: 14 },
+                                formatter: (value) => value.toLocaleString()
                             }
-
-                            return [
-                                `${label}:`,
-                                `  Ganaste hoy: +${dailyGain.toLocaleString()}`,
-                                `  Total acumulado: ${currentValue.toLocaleString()}`
-                            ];
-                        },
-                        footer: function (tooltipItems) {
-                            return 'Incluye reels + orgánicos';
                         }
                     }
-                }
+                });
+            } else {
+                // Modo: Vistas por Reel Individual (filtrado por plataforma)
+                unifiedCard.insertBefore(
+                    Object.assign(document.createElement('h3'), {
+                        textContent: `Rendimiento de Reels - ${currentStatsFilterPlatform}`,
+                        style: 'margin-bottom: 15px;'
+                    }),
+                    unifiedContainer
+                );
+
+                // Obtener reels individuales de la plataforma seleccionada
+                const reelStats = filteredStats.filter(s => s.platform === currentStatsFilterPlatform);
+
+                const labels = [];
+                const viewsData = [];
+                const engagementData = [];
+
+                reelStats.forEach(stat => {
+                    const guion = guiones.find(g => g.id === stat.guion_id);
+                    if (guion) {
+                        labels.push(guion.titulo.length > 20 ? guion.titulo.substring(0, 20) + '...' : guion.titulo);
+                        viewsData.push(stat.metrics.views || 0);
+                        engagementData.push(parseFloat(stat.metrics.engagement_rate) || 0);
+                    }
+                });
+
+                // Color corporativo de la plataforma seleccionada
+                const platformColor = {
+                    'Instagram': '#e1306c',
+                    'TikTok': '#00f2ea',
+                    'Facebook': '#1877f2'
+                }[currentStatsFilterPlatform] || '#14b8a6';
+
+                chartInstances['unified'] = new Chart(ctxUnified, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Vistas',
+                                data: viewsData,
+                                backgroundColor: platformColor,
+                                borderColor: platformColor,
+                                borderWidth: 2,
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: 'Engagement (%)',
+                                data: engagementData,
+                                backgroundColor: 'rgba(148, 163, 184, 0.7)',
+                                borderColor: '#94a3b8',
+                                borderWidth: 2,
+                                yAxisID: 'y1',
+                                type: 'line'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        scales: {
+                            y: {
+                                type: 'linear',
+                                position: 'left',
+                                grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                                ticks: { color: '#94a3b8' },
+                                title: {
+                                    display: true,
+                                    text: 'Vistas',
+                                    color: '#94a3b8'
+                                }
+                            },
+                            y1: {
+                                type: 'linear',
+                                position: 'right',
+                                grid: { display: false },
+                                ticks: {
+                                    color: '#94a3b8',
+                                    callback: function (value) {
+                                        return value + '%';
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Engagement %',
+                                    color: '#94a3b8'
+                                }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#94a3b8', maxRotation: 45, minRotation: 45 }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: { color: '#94a3b8' }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.datasetIndex === 1) {
+                                            label += context.parsed.y.toFixed(2) + '%';
+                                        } else {
+                                            label += context.parsed.y.toLocaleString() + ' vistas';
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
             }
-        }
-    });
-}
 
-// Función para calcular seguidores ACUMULATIVOS día a día (reels + orgánicos)
-function calculateMonthlyFollowers() {
-    // 1. Recolectar todas las fechas de reels publicados
-    const reelDatesSet = new Set();
+            // 3. Gráfico de Crecimiento de Seguidores por Mes (Line Chart)
+            const followersCanvas = document.createElement('canvas');
+            followersCanvas.id = 'chart-followers-growth';
 
-    guiones.filter(g => g.estado === 'Publicado' && g.formato === 'Reel').forEach(g => {
-        try {
-            reelDatesSet.add(g.fecha); // Formato: YYYY-MM-DD
-        } catch (e) { }
-    });
+            const followersCard = document.createElement('div');
+            followersCard.className = 'chart-card';
+            followersCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
+            followersCard.innerHTML = `<h3 style="margin-bottom: 15px;">Crecimiento Acumulativo de Seguidores</h3>`;
 
-    // 2. Recolectar fechas cuando se guardaron los totales orgánicos (usar la fecha real de guardado)
-    const organicDatesSet = new Set();
-    Object.entries(globalBusinessStats).forEach(([monthStr, data]) => {
-        if (data.savedDate) {
-            // Usar la fecha exacta en que se guardaron los totales
-            organicDatesSet.add(data.savedDate);
-        }
-    });
+            const followersContainer = document.createElement('div');
+            followersContainer.style.position = 'relative';
+            followersContainer.style.height = '300px';
+            followersContainer.style.width = '100%';
+            followersContainer.appendChild(followersCanvas);
 
-    // 3. Combinar ambas fechas
-    const allDatesSet = new Set([...reelDatesSet, ...organicDatesSet]);
-    const sortedDates = Array.from(allDatesSet).sort();
+            followersCard.appendChild(followersContainer);
+            chartsGrid.appendChild(followersCard);
 
-    if (sortedDates.length === 0) {
-        return { labels: [], instagram: [], tiktok: [], facebook: [] };
-    }
+            // Preparar datos mensuales
+            const monthlyData = calculateMonthlyFollowers();
 
-    // 4. Aplicar filtros de año y mes
-    const filteredDates = sortedDates.filter(dateStr => {
-        const date = new Date(dateStr + 'T12:00:00');
-        const year = date.getFullYear();
-        const month = date.getMonth();
+            // Construir datasets dinámicamente según filtro de plataforma
+            const datasets = [];
 
-        if (currentStatsFilterYear !== 'all' && year !== parseInt(currentStatsFilterYear)) return false;
-        if (currentStatsFilterMonth !== 'all' && month !== parseInt(currentStatsFilterMonth)) return false;
+            if (currentStatsFilterPlatform === 'all' || currentStatsFilterPlatform === 'Instagram') {
+                datasets.push({
+                    label: 'Instagram',
+                    data: monthlyData.instagram,
+                    borderColor: '#e1306c',
+                    backgroundColor: 'rgba(225, 48, 108, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                });
+            }
 
-        return true;
-    });
+            if (currentStatsFilterPlatform === 'all' || currentStatsFilterPlatform === 'TikTok') {
+                datasets.push({
+                    label: 'TikTok',
+                    data: monthlyData.tiktok,
+                    borderColor: '#ffffff',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                });
+            }
 
-    if (filteredDates.length === 0) {
-        return { labels: [], instagram: [], tiktok: [], facebook: [] };
-    }
+            if (currentStatsFilterPlatform === 'all' || currentStatsFilterPlatform === 'Facebook') {
+                datasets.push({
+                    label: 'Facebook',
+                    data: monthlyData.facebook,
+                    borderColor: '#1877f2',
+                    backgroundColor: 'rgba(24, 119, 242, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                });
+            }
 
-    // 5. Agregar punto inicial en 0 (primer día del primer mes o año filtrado)
-    const firstDate = new Date(filteredDates[0] + 'T12:00:00');
-    let startDate;
+            const ctxFollowers = followersCanvas.getContext('2d');
+            chartInstances['followers-growth'] = new Chart(ctxFollowers, {
+                type: 'line',
+                data: {
+                    labels: monthlyData.labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#94a3b8' },
+                            title: { display: true, text: 'Nuevos Seguidores', color: '#94a3b8' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { color: '#94a3b8' }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const label = context.dataset.label || '';
+                                    const currentValue = context.parsed.y || 0;
+                                    const dataIndex = context.dataIndex;
 
-    if (currentStatsFilterMonth !== 'all') {
-        // Si hay filtro de mes, empezar el día 1 de ese mes
-        const filterMonth = parseInt(currentStatsFilterMonth);
-        const filterYear = currentStatsFilterYear !== 'all' ? parseInt(currentStatsFilterYear) : firstDate.getFullYear();
-        startDate = `${filterYear}-${String(filterMonth + 1).padStart(2, '0')}-01`;
-    } else if (currentStatsFilterYear !== 'all') {
-        // Si hay filtro de año, empezar el 1 de enero de ese año
-        startDate = `${currentStatsFilterYear}-01-01`;
-    } else {
-        // Sin filtros, empezar el día 1 del mes del primer dato
-        startDate = `${firstDate.getFullYear()}-${String(firstDate.getMonth() + 1).padStart(2, '0')}-01`;
-    }
+                                    // Calcular seguidores ganados ese día
+                                    let dailyGain = currentValue;
+                                    if (dataIndex > 0) {
+                                        const previousValue = context.dataset.data[dataIndex - 1] || 0;
+                                        dailyGain = currentValue - previousValue;
+                                    }
 
-    // Agregar fecha inicial si no está ya en los datos
-    if (!filteredDates.includes(startDate)) {
-        filteredDates.unshift(startDate);
-        filteredDates.sort();
-    }
-
-    const labels = [];
-    const instagramData = [];
-    const tiktokData = [];
-    const facebookData = [];
-
-    // Variables para acumulación
-    let igAccumulator = 0;
-    let tkAccumulator = 0;
-    let fbAccumulator = 0;
-
-    // 6. Procesar cada fecha
-    filteredDates.forEach(dateStr => {
-        const date = new Date(dateStr + 'T12:00:00');
-        const year = date.getFullYear();
-        const month = date.getMonth() + 1;
-        const monthStr = `${year}-${String(month).padStart(2, '0')}`;
-
-        // Formatear label
-        const day = date.getDate();
-        const monthName = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][date.getMonth()];
-
-        // Mostrar día y mes
-        labels.push(`${day} ${monthName}`);
-
-        let igFollowersToday = 0;
-        let tkFollowersToday = 0;
-        let fbFollowersToday = 0;
-
-        // A. Sumar seguidores de reels publicados en esta fecha
-        const guionesDay = guiones.filter(g => g.estado === 'Publicado' && g.formato === 'Reel' && g.fecha === dateStr);
-
-        guionesDay.forEach(g => {
-            g.plataformas.forEach(platform => {
-                const stat = statistics.find(s => s.guion_id === g.id && s.platform === platform);
-                if (stat && stat.metrics.followers) {
-                    if (platform === 'Instagram') {
-                        igFollowersToday += stat.metrics.followers;
-                    } else if (platform === 'TikTok') {
-                        tkFollowersToday += stat.metrics.followers;
-                    } else if (platform === 'Facebook') {
-                        fbFollowersToday += stat.metrics.followers;
+                                    return [
+                                        `${label}:`,
+                                        `  Ganaste hoy: +${dailyGain.toLocaleString()}`,
+                                        `  Total acumulado: ${currentValue.toLocaleString()}`
+                                    ];
+                                },
+                                footer: function (tooltipItems) {
+                                    return 'Incluye reels + orgánicos';
+                                }
+                            }
+                        }
                     }
                 }
             });
-        });
+        }
 
-        // B. Si esta es la fecha guardada para algún mes, agregar seguidores orgánicos
-        Object.entries(globalBusinessStats).forEach(([mStr, data]) => {
-            if (data.savedDate === dateStr) {
-                igFollowersToday += (data.ig?.followersOrganic || 0);
-                tkFollowersToday += (data.tk?.followersOrganic || 0);
-                fbFollowersToday += (data.fb?.followersOrganic || 0);
+// Función para calcular seguidores ACUMULATIVOS día a día (reels + orgánicos)
+function calculateMonthlyFollowers() {
+                // 1. Recolectar todas las fechas de reels publicados
+                const reelDatesSet = new Set();
+
+                guiones.filter(g => g.estado === 'Publicado' && g.formato === 'Reel').forEach(g => {
+                    try {
+                        reelDatesSet.add(g.fecha); // Formato: YYYY-MM-DD
+                    } catch (e) { }
+                });
+
+                // 2. Recolectar fechas cuando se guardaron los totales orgánicos (usar la fecha real de guardado)
+                const organicDatesSet = new Set();
+                Object.entries(globalBusinessStats).forEach(([monthStr, data]) => {
+                    if (data.savedDate) {
+                        // Usar la fecha exacta en que se guardaron los totales
+                        organicDatesSet.add(data.savedDate);
+                    }
+                });
+
+                // 3. Combinar ambas fechas
+                const allDatesSet = new Set([...reelDatesSet, ...organicDatesSet]);
+                const sortedDates = Array.from(allDatesSet).sort();
+
+                if (sortedDates.length === 0) {
+                    return { labels: [], instagram: [], tiktok: [], facebook: [] };
+                }
+
+                // 4. Aplicar filtros de año y mes
+                const filteredDates = sortedDates.filter(dateStr => {
+                    const date = new Date(dateStr + 'T12:00:00');
+                    const year = date.getFullYear();
+                    const month = date.getMonth();
+
+                    if (currentStatsFilterYear !== 'all' && year !== parseInt(currentStatsFilterYear)) return false;
+                    if (currentStatsFilterMonth !== 'all' && month !== parseInt(currentStatsFilterMonth)) return false;
+
+                    return true;
+                });
+
+                if (filteredDates.length === 0) {
+                    return { labels: [], instagram: [], tiktok: [], facebook: [] };
+                }
+
+                // 5. Agregar punto inicial en 0 (primer día del primer mes o año filtrado)
+                const firstDate = new Date(filteredDates[0] + 'T12:00:00');
+                let startDate;
+
+                if (currentStatsFilterMonth !== 'all') {
+                    // Si hay filtro de mes, empezar el día 1 de ese mes
+                    const filterMonth = parseInt(currentStatsFilterMonth);
+                    const filterYear = currentStatsFilterYear !== 'all' ? parseInt(currentStatsFilterYear) : firstDate.getFullYear();
+                    startDate = `${filterYear}-${String(filterMonth + 1).padStart(2, '0')}-01`;
+                } else if (currentStatsFilterYear !== 'all') {
+                    // Si hay filtro de año, empezar el 1 de enero de ese año
+                    startDate = `${currentStatsFilterYear}-01-01`;
+                } else {
+                    // Sin filtros, empezar el día 1 del mes del primer dato
+                    startDate = `${firstDate.getFullYear()}-${String(firstDate.getMonth() + 1).padStart(2, '0')}-01`;
+                }
+
+                // Agregar fecha inicial si no está ya en los datos
+                if (!filteredDates.includes(startDate)) {
+                    filteredDates.unshift(startDate);
+                    filteredDates.sort();
+                }
+
+                const labels = [];
+                const instagramData = [];
+                const tiktokData = [];
+                const facebookData = [];
+
+                // Variables para acumulación
+                let igAccumulator = 0;
+                let tkAccumulator = 0;
+                let fbAccumulator = 0;
+
+                // 6. Procesar cada fecha
+                filteredDates.forEach(dateStr => {
+                    const date = new Date(dateStr + 'T12:00:00');
+                    const year = date.getFullYear();
+                    const month = date.getMonth() + 1;
+                    const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+
+                    // Formatear label
+                    const day = date.getDate();
+                    const monthName = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][date.getMonth()];
+
+                    // Mostrar día y mes
+                    labels.push(`${day} ${monthName}`);
+
+                    let igFollowersToday = 0;
+                    let tkFollowersToday = 0;
+                    let fbFollowersToday = 0;
+
+                    // A. Sumar seguidores de reels publicados en esta fecha
+                    const guionesDay = guiones.filter(g => g.estado === 'Publicado' && g.formato === 'Reel' && g.fecha === dateStr);
+
+                    guionesDay.forEach(g => {
+                        g.plataformas.forEach(platform => {
+                            const stat = statistics.find(s => s.guion_id === g.id && s.platform === platform);
+                            if (stat && stat.metrics.followers) {
+                                if (platform === 'Instagram') {
+                                    igFollowersToday += stat.metrics.followers;
+                                } else if (platform === 'TikTok') {
+                                    tkFollowersToday += stat.metrics.followers;
+                                } else if (platform === 'Facebook') {
+                                    fbFollowersToday += stat.metrics.followers;
+                                }
+                            }
+                        });
+                    });
+
+                    // B. Si esta es la fecha guardada para algún mes, agregar seguidores orgánicos
+                    Object.entries(globalBusinessStats).forEach(([mStr, data]) => {
+                        if (data.savedDate === dateStr) {
+                            igFollowersToday += (data.ig?.followersOrganic || 0);
+                            tkFollowersToday += (data.tk?.followersOrganic || 0);
+                            fbFollowersToday += (data.fb?.followersOrganic || 0);
+                        }
+                    });
+
+                    // Acumular
+                    igAccumulator += igFollowersToday;
+                    tkAccumulator += tkFollowersToday;
+                    fbAccumulator += fbFollowersToday;
+
+                    // Guardar datos acumulados
+                    instagramData.push(igAccumulator);
+                    tiktokData.push(tkAccumulator);
+                    facebookData.push(fbAccumulator);
+                });
+
+                return { labels, instagram: instagramData, tiktok: tiktokData, facebook: facebookData };
             }
-        });
-
-        // Acumular
-        igAccumulator += igFollowersToday;
-        tkAccumulator += tkFollowersToday;
-        fbAccumulator += fbFollowersToday;
-
-        // Guardar datos acumulados
-        instagramData.push(igAccumulator);
-        tiktokData.push(tkAccumulator);
-        facebookData.push(fbAccumulator);
-    });
-
-    return { labels, instagram: instagramData, tiktok: tiktokData, facebook: facebookData };
-}
