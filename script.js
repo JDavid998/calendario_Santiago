@@ -2014,7 +2014,12 @@ function saveGlobalStats() {
     const monthStr = document.getElementById('globalStatsMonth').value;
     if (!monthStr) return alert('Selecciona un mes');
 
+    // Guardar la fecha actual cuando se ingresan los totales
+    const today = new Date();
+    const savedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
     const data = {
+        savedDate: savedDate, // Fecha en que se guardaron los totales
         ig: {
             followersOrganic: parseInt(document.getElementById('gs-ig-followers-organic').value) || 0,
             messages: parseInt(document.getElementById('gs-ig-messages').value) || 0,
@@ -2691,12 +2696,13 @@ function calculateMonthlyFollowers() {
         } catch (e) { }
     });
 
-    // 2. Recolectar fechas de meses con seguidores orgánicos (usar el primer día del mes)
+    // 2. Recolectar fechas cuando se guardaron los totales orgánicos (usar la fecha real de guardado)
     const organicDatesSet = new Set();
-    Object.keys(globalBusinessStats).forEach(monthStr => {
-        const [year, month] = monthStr.split('-');
-        const firstDayOfMonth = `${year}-${month}-01`;
-        organicDatesSet.add(firstDayOfMonth);
+    Object.entries(globalBusinessStats).forEach(([monthStr, data]) => {
+        if (data.savedDate) {
+            // Usar la fecha exacta en que se guardaron los totales
+            organicDatesSet.add(data.savedDate);
+        }
     });
 
     // 3. Combinar ambas fechas
@@ -2704,7 +2710,7 @@ function calculateMonthlyFollowers() {
     const sortedDates = Array.from(allDatesSet).sort();
 
     if (sortedDates.length === 0) {
-        return { labels: [], instagram: [], tiktok: [] };
+        return { labels: [], instagram: [], tiktok: [], facebook: [] };
     }
 
     // 4. Aplicar filtros de año y mes
@@ -2720,7 +2726,30 @@ function calculateMonthlyFollowers() {
     });
 
     if (filteredDates.length === 0) {
-        return { labels: [], instagram: [], tiktok: [] };
+        return { labels: [], instagram: [], tiktok: [], facebook: [] };
+    }
+
+    // 5. Agregar punto inicial en 0 (primer día del primer mes o año filtrado)
+    const firstDate = new Date(filteredDates[0] + 'T12:00:00');
+    let startDate;
+
+    if (currentStatsFilterMonth !== 'all') {
+        // Si hay filtro de mes, empezar el día 1 de ese mes
+        const filterMonth = parseInt(currentStatsFilterMonth);
+        const filterYear = currentStatsFilterYear !== 'all' ? parseInt(currentStatsFilterYear) : firstDate.getFullYear();
+        startDate = `${filterYear}-${String(filterMonth + 1).padStart(2, '0')}-01`;
+    } else if (currentStatsFilterYear !== 'all') {
+        // Si hay filtro de año, empezar el 1 de enero de ese año
+        startDate = `${currentStatsFilterYear}-01-01`;
+    } else {
+        // Sin filtros, empezar el día 1 del mes del primer dato
+        startDate = `${firstDate.getFullYear()}-${String(firstDate.getMonth() + 1).padStart(2, '0')}-01`;
+    }
+
+    // Agregar fecha inicial si no está ya en los datos
+    if (!filteredDates.includes(startDate)) {
+        filteredDates.unshift(startDate);
+        filteredDates.sort();
     }
 
     const labels = [];
@@ -2733,7 +2762,7 @@ function calculateMonthlyFollowers() {
     let tkAccumulator = 0;
     let fbAccumulator = 0;
 
-    // 5. Procesar cada fecha
+    // 6. Procesar cada fecha
     filteredDates.forEach(dateStr => {
         const date = new Date(dateStr + 'T12:00:00');
         const year = date.getFullYear();
@@ -2744,12 +2773,8 @@ function calculateMonthlyFollowers() {
         const day = date.getDate();
         const monthName = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][date.getMonth()];
 
-        // Si es día 01, mostrar mes completo en el label
-        if (day === 1) {
-            labels.push(`${monthName} ${year}`);
-        } else {
-            labels.push(`${day} ${monthName}`);
-        }
+        // Mostrar día y mes
+        labels.push(`${day} ${monthName}`);
 
         let igFollowersToday = 0;
         let tkFollowersToday = 0;
@@ -2773,13 +2798,14 @@ function calculateMonthlyFollowers() {
             });
         });
 
-        // B. Si es el primer día del mes, agregar seguidores orgánicos de ese mes
-        if (day === 1 && globalBusinessStats[monthStr]) {
-            const data = globalBusinessStats[monthStr];
-            igFollowersToday += (data.ig?.followersOrganic || 0);
-            tkFollowersToday += (data.tk?.followersOrganic || 0);
-            fbFollowersToday += (data.fb?.followersOrganic || 0);
-        }
+        // B. Si esta es la fecha guardada para algún mes, agregar seguidores orgánicos
+        Object.entries(globalBusinessStats).forEach(([mStr, data]) => {
+            if (data.savedDate === dateStr) {
+                igFollowersToday += (data.ig?.followersOrganic || 0);
+                tkFollowersToday += (data.tk?.followersOrganic || 0);
+                fbFollowersToday += (data.fb?.followersOrganic || 0);
+            }
+        });
 
         // Acumular
         igAccumulator += igFollowersToday;
