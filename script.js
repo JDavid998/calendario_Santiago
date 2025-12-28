@@ -2542,6 +2542,20 @@ function renderStatsSummary() {
     if (!summaryContainer) return;
     summaryContainer.innerHTML = '';
 
+    // Mejora de Layout: Centrado y con wrap para múltiples filas
+    summaryContainer.style.display = 'flex';
+    summaryContainer.style.flexWrap = 'wrap';
+    summaryContainer.style.justifyContent = 'center';
+    summaryContainer.style.gap = '20px';
+
+    // FIX: Recargar datos globales frescos para asegurar que se muestren los cambios recientes
+    if (IS_LOCAL_MODE) {
+        const storedStats = localStorage.getItem(`local_globalStats_${currentWorkspace}`);
+        if (storedStats) {
+            globalBusinessStats = JSON.parse(storedStats);
+        }
+    }
+
     // 1. Obtener IDs de guiones válidos según filtros de fecha/formato/plataforma
     const validGuionIds = guiones.filter(g => {
         if (g.estado !== 'Publicado') return false;
@@ -2637,17 +2651,18 @@ function renderStatsSummary() {
     const iconLost = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="18" y1="8" x2="23" y2="13"></line><line x1="23" y1="8" x2="18" y2="13"></line></svg>`;
 
     // Renderizar Cards (Incluyendo todos los metrics)
+    // Orden ajustado para dejar Seguidores Org y Perdidos al final, facilitando que bajen a segunda fila si no hay espacio
     const metrics = [
         { label: 'Vistas Totales', value: totalViews.toLocaleString(), icon: iconViews, color: '#3b82f6' },
         { label: 'Likes Totales', value: totalLikes.toLocaleString(), icon: iconLikes, color: '#ec4899' },
         { label: 'Comentarios', value: totalComments.toLocaleString(), icon: iconComments, color: '#14b8a6' },
         { label: 'Compartidos', value: totalShares.toLocaleString(), icon: iconShares, color: '#f59e0b' },
         { label: 'Guardados', value: totalSaves.toLocaleString(), icon: iconSaves, color: '#8b5cf6' },
+        { label: 'Engagement', value: avgEngagement + '%', icon: iconEng, color: '#f97316' },
         { label: 'Mensajes', value: totalMessages.toLocaleString(), icon: iconMessages, color: '#6366f1' },
         { label: 'Ventas Cerradas', value: totalSales.toLocaleString(), icon: iconSales, color: '#10b981' },
         { label: 'Seguidores Orgánicos', value: totalOrganic.toLocaleString(), icon: iconOrganic, color: '#0ea5e9' },
-        { label: 'Seguidores Perdidos', value: totalLost.toLocaleString(), icon: iconLost, color: '#ef4444' },
-        { label: 'Engagement Promedio', value: avgEngagement + '%', icon: iconEng, color: '#f97316' }
+        { label: 'Seguidores Perdidos', value: totalLost.toLocaleString(), icon: iconLost, color: '#ef4444' }
     ];
 
     metrics.forEach(m => {
@@ -2660,6 +2675,8 @@ function renderStatsSummary() {
         card.style.alignItems = 'center';
         card.style.gap = '10px';
         card.style.minWidth = '200px';
+        card.style.flex = '1 1 200px'; // Permitir que crezcan y se encojan, base 200px
+        card.style.maxWidth = '300px'; // Evitar que sean enormes en pantallas grandes
 
         card.innerHTML = `
             <div style="background: ${m.color}20; padding: 8px; border-radius: 8px; color: ${m.color}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
