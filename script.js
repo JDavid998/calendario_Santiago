@@ -1929,7 +1929,7 @@ async function deleteUser(email) {
 // ============================================
 
 // Mostrar modal de gestión de calendarios
-function showWorkspaceManagement() {
+window.showWorkspaceManagement = function () {
     console.log('📅 [WORKSPACE-MGMT] Función showWorkspaceManagement llamada');
     console.log('📅 [WORKSPACE-MGMT] Usuario actual:', currentUser);
 
@@ -2638,6 +2638,33 @@ function renderStatsSummary() {
     // Avg Engagement
     const avgEngagement = (filteredStats.reduce((sum, s) => sum + parseFloat(s.metrics.engagement_rate || 0), 0) / (filteredStats.length || 1)).toFixed(2);
 
+    // Calcular Seguidores Actuales (acumulado hasta el rango filtrado)
+    // Sumar todos los seguidores de reels + orgánicos - perdidos
+    let currentFollowers = 0;
+
+    // Sumar seguidores de reels publicados (filtrados por plataforma si aplica)
+    guiones.filter(g => g.estado === 'Publicado' && g.formato === 'Reel').forEach(g => {
+        // Aplicar filtros de fecha
+        let gDate;
+        try { gDate = new Date(g.fecha + 'T12:00:00'); } catch (e) { return; }
+
+        if (currentStatsFilterMonth !== 'all' && gDate.getMonth() !== parseInt(currentStatsFilterMonth)) return;
+        if (currentStatsFilterYear !== 'all' && gDate.getFullYear() !== parseInt(currentStatsFilterYear)) return;
+
+        g.plataformas.forEach(platform => {
+            // Aplicar filtro de plataforma
+            if (currentStatsFilterPlatform !== 'all' && platform !== currentStatsFilterPlatform) return;
+
+            const stat = statistics.find(s => s.guion_id === g.id && s.platform === platform);
+            if (stat && stat.metrics.followers) {
+                currentFollowers += stat.metrics.followers;
+            }
+        });
+    });
+
+    // Sumar seguidores orgánicos y restar perdidos (ya calculados arriba con filtros)
+    currentFollowers += totalOrganic - totalLost;
+
     // Iconos SVG
     const iconViews = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
     const iconLikes = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
@@ -2649,10 +2676,12 @@ function renderStatsSummary() {
     const iconSales = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>`;
     const iconOrganic = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polyline points="16 11 18 13 22 9"></polyline></svg>`;
     const iconLost = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="18" y1="8" x2="23" y2="13"></line><line x1="23" y1="8" x2="18" y2="13"></line></svg>`;
+    const iconCurrentFollowers = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`;
 
     // Renderizar Cards (Incluyendo todos los metrics)
     // Orden ajustado para dejar Seguidores Org y Perdidos al final, facilitando que bajen a segunda fila si no hay espacio
     const metrics = [
+        { label: 'Seguidores Actuales', value: currentFollowers.toLocaleString(), icon: iconCurrentFollowers, color: '#22c55e' },
         { label: 'Vistas Totales', value: totalViews.toLocaleString(), icon: iconViews, color: '#3b82f6' },
         { label: 'Likes Totales', value: totalLikes.toLocaleString(), icon: iconLikes, color: '#ec4899' },
         { label: 'Comentarios', value: totalComments.toLocaleString(), icon: iconComments, color: '#14b8a6' },
