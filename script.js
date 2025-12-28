@@ -131,9 +131,41 @@ function injectCustomStyles() {
                 flex-wrap: wrap;
             }
             
-            /* Ajuste del selector de workspace */
+            /* Ajuste del selector de workspace más compacto en móvil */
+            .workspace-selector-content {
+                padding: 20px !important;
+                width: 90% !important;
+                max-width: 350px !important;
+            }
+            .workspace-selector h1 {
+                font-size: 1.5rem !important;
+                margin-bottom: 10px !important;
+            }
+            .workspace-subtitle {
+                font-size: 0.9rem !important;
+                margin-bottom: 20px !important;
+            }
             .workspace-buttons {
                 grid-template-columns: 1fr !important;
+                gap: 15px !important;
+            }
+            .workspace-btn {
+                padding: 15px !important;
+                flex-direction: row !important; /* Icono al lado del texto en vez de arriba para ahorrar espacio vertical */
+                align-items: center !important;
+                text-align: left !important;
+                gap: 15px !important;
+            }
+            .workspace-btn img, .workspace-btn svg.workspace-icon {
+                width: 40px !important;
+                height: 40px !important;
+                margin-bottom: 0 !important; /* Quitar margen inferior porque ahora está al lado */
+            }
+            .workspace-name {
+                font-size: 1.1rem !important;
+            }
+            .workspace-desc {
+                font-size: 0.8rem !important;
             }
             
             /* Ajuste de filtros */
