@@ -640,6 +640,10 @@ textarea {
     margin-bottom: 8px;
 }
 
+.day-content {
+    margin-bottom: 4px;
+}
+
 .day-note {
     font-size: 0.8rem;
     color: var(--text-secondary);
@@ -652,6 +656,45 @@ textarea {
     -webkit-box-orient: vertical;
 }
 
+.day-guion {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+/* Botón de agregar nota (solo visible en hover) */
+.add-note-btn {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    border: none;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.add-note-btn:hover {
+    background: var(--primary-dark);
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.day-cell:hover .add-note-btn {
+    display: flex;
+}
+
 .day-cell.has-note {
     background: var(--bg-secondary);
     border-color: #A22122;
@@ -659,12 +702,10 @@ textarea {
 
 .day-cell.has-note .day-number {
     color: #FFFFFF;
-    /* Color del número del día */
 }
 
 .day-cell.has-note .day-note {
     color: #A22122;
-    /* Color del texto del evento */
 }
 
 .day-cell.has-guion {

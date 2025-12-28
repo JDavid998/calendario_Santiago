@@ -179,6 +179,18 @@ export default async function handler(req, res) {
                 )
             `;
 
+            await sql`
+                CREATE TABLE IF NOT EXISTS global_business_stats (
+                    id SERIAL PRIMARY KEY,
+                    workspace VARCHAR(50) NOT NULL,
+                    month_key VARCHAR(7) NOT NULL,
+                    data JSONB NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(workspace, month_key)
+                )
+            `;
+
             return res.status(200).json({ success: true, message: 'Workspaces y Tablas inicializados' });
         }
 
@@ -216,6 +228,44 @@ export default async function handler(req, res) {
             }
 
             await sql`DELETE FROM workspaces WHERE id = ${workspaceId}`;
+            return res.status(200).json({ success: true });
+        }
+
+        // --- GLOBAL BUSINESS STATS ---
+        if (action === 'initGlobalStatsTable' && req.method === 'POST') {
+            await sql`
+                CREATE TABLE IF NOT EXISTS global_business_stats (
+                    id SERIAL PRIMARY KEY,
+                    workspace VARCHAR(50) NOT NULL,
+                    month_key VARCHAR(7) NOT NULL,
+                    data JSONB NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(workspace, month_key)
+                )
+            `;
+            return res.status(200).json({ success: true, message: 'Tabla global_business_stats creada' });
+        }
+
+        if (action === 'getGlobalStats') {
+            const stats = await sql`SELECT * FROM global_business_stats WHERE workspace = ${workspace}`;
+            const formatted = {};
+            stats.forEach(s => {
+                formatted[s.month_key] = s.data;
+            });
+            return res.status(200).json(formatted);
+        }
+
+        if (action === 'saveGlobalStats' && req.method === 'POST') {
+            const { monthKey, data } = req.body;
+
+            await sql`
+                INSERT INTO global_business_stats (workspace, month_key, data)
+                VALUES (${workspace}, ${monthKey}, ${JSON.stringify(data)})
+                ON CONFLICT (workspace, month_key) 
+                DO UPDATE SET data = ${JSON.stringify(data)}, updated_at = CURRENT_TIMESTAMP
+            `;
+
             return res.status(200).json({ success: true });
         }
 

@@ -26,6 +26,7 @@ let selectedDay = null;
 let calendarNotes = {};
 let guiones = [];
 let statistics = [];
+let globalBusinessStats = {}; // Totales mensuales por workspace
 let editingGuionId = null;
 let workspaces = []; // Lista de calendarios disponibles
 
@@ -235,6 +236,8 @@ function logout() {
         currentWorkspace = null;
         calendarNotes = {};
         guiones = [];
+        statistics = [];
+        globalBusinessStats = {};
 
         // Ocultar contenedor principal
         document.getElementById('mainContainer').style.display = 'none';
@@ -360,6 +363,8 @@ function changeWorkspace() {
         // Limpiar estado actual
         calendarNotes = {};
         guiones = [];
+        statistics = [];
+        globalBusinessStats = {};
 
         showWorkspaceSelector();
     }
@@ -389,6 +394,7 @@ async function loadData() {
         calendarNotes = JSON.parse(localStorage.getItem(`local_notes_${currentWorkspace}`) || '{}');
         guiones = JSON.parse(localStorage.getItem(`local_guiones_${currentWorkspace}`) || '[]');
         statistics = JSON.parse(localStorage.getItem(`local_stats_${currentWorkspace}`) || '[]');
+        globalBusinessStats = JSON.parse(localStorage.getItem(`local_globalStats_${currentWorkspace}`) || '{}');
         return;
     }
 
@@ -409,11 +415,20 @@ async function loadData() {
             statistics = [];
         }
 
+        // Cargar Global Business Stats
+        const globalStatsRes = await fetch(`/api/data?action=getGlobalStats&workspace=${currentWorkspace}`);
+        if (globalStatsRes.ok) {
+            globalBusinessStats = await globalStatsRes.json();
+        } else {
+            globalBusinessStats = {};
+        }
+
     } catch (e) {
         console.error("Error al cargar datos de Neon DB:", e);
         calendarNotes = {};
         guiones = [];
         statistics = [];
+        globalBusinessStats = {};
     }
 }
 
@@ -771,17 +786,29 @@ function renderCalendar() {
         // Determinar qué mostrar
         let contentHTML = '';
 
+        // Renderizar Guiones con colores por tipo
         if (dayGuiones.length > 0) {
             dayCell.classList.add('has-guion');
-            const guionesTitles = dayGuiones.map(g => `
-                <div class="guion-item">
-                    <span class="guion-bullet">•</span> ${g.titulo}
-                </div>
-            `).join('');
-            contentHTML = `<div class="day-guiones">${guionesTitles}</div>`;
+
+            // Definir colores por tipo de guion
+            const colorMap = {
+                'Reel': '#e1306c',           // Rosa/Magenta de Instagram
+                'Carrusel': '#f59e0b',       // Naranja
+                'Historia': '#8b5cf6',       // Morado/Violeta
+                'Guion': '#14b8a6'          // Teal (por si hay tipo genérico)
+            };
+
+            dayGuiones.forEach(g => {
+                const iconColor = colorMap[g.formato] || '#14b8a6'; // Default teal
+                const iconClass = g.formato === 'Reel' ? '🎬' :
+                    g.formato === 'Carrusel' ? '📸' :
+                        g.formato === 'Historia' ? '📖' : '📝';
+
+                contentHTML += `<div class="day-guion" style="color: ${iconColor};">${iconClass} ${g.titulo}</div>`;
+            });
         }
 
-        // Mostrar notas (si hay)
+        // Renderizar Notas
         if (notes.length > 0) {
             dayCell.classList.add('has-note');
 
@@ -802,16 +829,31 @@ function renderCalendar() {
             }
         }
 
-        if (!contentHTML) {
-            contentHTML = '<div class="day-note" style="color: var(--text-tertiary); font-style: italic;">Clic para agregar</div>';
-        }
-
+        // Crear estructura del día con botón de agregar en hover
         dayCell.innerHTML = `
             <div class="day-number">${day}</div>
-            ${contentHTML}
+            ${contentHTML ? `<div class="day-content">${contentHTML}</div>` : ''}
+            <button class="add-note-btn" title="Agregar nota">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
         `;
 
-        dayCell.addEventListener('click', () => openDayModal(day));
+        // Agregar evento al botón de agregar
+        const addBtn = dayCell.querySelector('.add-note-btn');
+        addBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Evitar que se abra el modal del día
+            openDayModal(day);
+        });
+
+        // Evento para abrir modal al hacer clic en el día (pero no en el botón)
+        dayCell.addEventListener('click', (e) => {
+            if (!e.target.closest('.add-note-btn')) {
+                openDayModal(day);
+            }
+        });
 
         calendarGrid.appendChild(dayCell);
     }
@@ -1983,9 +2025,6 @@ function renderStatisticsUI() {
     updateAll();
 }
 
-// Variables Globales para Metricas de Negocio (Persistencia Local por ahora)
-let globalBusinessStats = JSON.parse(localStorage.getItem('globalBusinessStats') || '{}');
-
 function openGlobalStatsModal() {
     openModal('globalStatsModal');
     // Pre-fill con el mes actual del filtro o del sistema
@@ -2014,12 +2053,13 @@ function saveGlobalStats() {
     const monthStr = document.getElementById('globalStatsMonth').value;
     if (!monthStr) return alert('Selecciona un mes');
 
-    // Guardar la fecha actual cuando se ingresan los totales
-    const today = new Date();
-    const savedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    // Calcular el último día del mes seleccionado
+    const [year, month] = monthStr.split('-').map(Number);
+    const lastDay = new Date(year, month, 0).getDate(); // Día 0 del siguiente mes = último día del mes actual
+    const savedDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
     const data = {
-        savedDate: savedDate, // Fecha en que se guardaron los totales
+        savedDate: savedDate, // Último día del mes seleccionado
         ig: {
             followersOrganic: parseInt(document.getElementById('gs-ig-followers-organic').value) || 0,
             messages: parseInt(document.getElementById('gs-ig-messages').value) || 0,
@@ -2038,7 +2078,25 @@ function saveGlobalStats() {
     };
 
     globalBusinessStats[monthStr] = data;
-    localStorage.setItem('globalBusinessStats', JSON.stringify(globalBusinessStats));
+
+    // Guardar con separación por workspace
+    if (IS_LOCAL_MODE) {
+        localStorage.setItem(`local_globalStats_${currentWorkspace}`, JSON.stringify(globalBusinessStats));
+    } else {
+        // Guardar en base de datos
+        fetch('/api/data?action=saveGlobalStats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                workspace: currentWorkspace,
+                monthKey: monthStr,
+                data: data
+            })
+        }).catch(err => {
+            console.error('Error al guardar global stats:', err);
+            alert('Error al guardar los totales. Intenta nuevamente.');
+        });
+    }
 
     closeModal('globalStatsModal');
     renderStatsSummary(); // Actualizar resumen
