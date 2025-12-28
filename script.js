@@ -526,7 +526,8 @@ function initializeTabs() {
                 renderStatisticsUI();
             }
         });
-    });
+    }
+});
 }
 
 // Inicializar modales
