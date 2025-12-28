@@ -2374,6 +2374,9 @@ function renderStatsSummary() {
         filteredStats = filteredStats.filter(s => s.platform === currentStatsFilterPlatform);
     }
 
+    // 4. Filtrar solo estadísticas con datos significativos
+    filteredStats = filteredStats.filter(s => hasSignificantData(s.metrics));
+
     // --- CALCULO METRICAS GLOBALES (MENSAJES / VENTAS) ---
     // Logica: Sumar mensajes/ventas de globalBusinessStats que coincidan con el filtro de fecha
     let totalMessages = 0;
@@ -2660,6 +2663,12 @@ async function saveStatistics() {
     }
 }
 
+// Función para validar que las métricas tengan datos significativos
+function hasSignificantData(metrics) {
+    // Verificar que al menos tenga vistas > 0
+    return (metrics.views || 0) > 0;
+}
+
 function renderStatsCharts() {
     const chartsGrid = document.getElementById('statsChartsGrid');
     if (!chartsGrid) return;
@@ -2691,6 +2700,9 @@ function renderStatsCharts() {
         if (currentStatsFilterYear !== 'all' && gDate.getFullYear() !== parseInt(currentStatsFilterYear)) return false;
         if (currentStatsFilterFormat !== 'all' && (guion.formato || 'Carrusel') !== currentStatsFilterFormat) return false;
         if (currentStatsFilterPlatform !== 'all' && s.platform !== currentStatsFilterPlatform) return false;
+
+        // Validar que tenga datos significativos
+        if (!hasSignificantData(s.metrics)) return false;
 
         return true;
     });
@@ -2726,14 +2738,17 @@ function renderStatsCharts() {
         );
 
         // Determine active platforms based on filteredStats
-        const activePlatforms = [...new Set(filteredStats.map(s => s.platform))];
+        const allPlatforms = [...new Set(filteredStats.map(s => s.platform))];
 
         const viewsByPlatform = {};
-        activePlatforms.forEach(p => {
+        allPlatforms.forEach(p => {
             viewsByPlatform[p] = filteredStats
                 .filter(s => s.platform === p)
                 .reduce((sum, s) => sum + (s.metrics.views || 0), 0);
         });
+
+        // Filtrar solo plataformas con vistas > 0
+        const activePlatforms = allPlatforms.filter(p => viewsByPlatform[p] > 0);
 
         // Colores corporativos
         const platformColors = {
