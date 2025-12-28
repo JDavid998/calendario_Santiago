@@ -1655,6 +1655,7 @@ function initializeUserModals() {
 
         // Restore original listener
         const newBtn = saveBtn.cloneNode(true);
+        newBtn.removeAttribute('onclick');
         saveBtn.parentNode.replaceChild(newBtn, saveBtn);
         newBtn.addEventListener('click', saveNewUser);
 
@@ -3379,7 +3380,7 @@ window.editUser = async function (email) {
 
     const modal = document.getElementById('addUserModal');
     // Set text content properly
-    const titleEl = modal.querySelector('h2') || document.getElementById('modalTitleUser');
+    const titleEl = document.getElementById('userModalTitle');
     if (titleEl) titleEl.textContent = 'Editar Usuario';
 
     document.getElementById('newUserEmail').value = email;
@@ -3410,6 +3411,7 @@ window.editUser = async function (email) {
 
     // Swapping listener to updates
     const newBtn = saveBtn.cloneNode(true);
+    newBtn.removeAttribute('onclick');
     saveBtn.parentNode.replaceChild(newBtn, saveBtn);
 
     newBtn.addEventListener('click', async () => {
