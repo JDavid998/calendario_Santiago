@@ -357,7 +357,8 @@ function selectWorkspace(workspace) {
     currentWorkspace = workspace;
     sessionStorage.setItem('currentWorkspace', workspace);
     document.getElementById('workspaceSelector').classList.remove('active');
-    initializeApp();
+    // Refrescar la página para asegurar estado limpio
+    location.reload();
 }
 
 // Cambiar workspace
@@ -367,12 +368,14 @@ function changeWorkspace() {
         sessionStorage.removeItem('currentWorkspace');
 
         // Limpiar estado actual
+        // Limpiar estado actual
         calendarNotes = {};
         guiones = [];
         statistics = [];
         globalBusinessStats = {};
 
-        showWorkspaceSelector();
+        // Refrescar página para volver al selector limpio
+        location.reload();
     }
 }
 
@@ -3155,20 +3158,33 @@ function renderStatsCharts() {
         });
     }
 
-    // 5. Gráfico de Tiempo Total de Reproducción (Reels) - Segunda Gráfica
-    const reelPlaybackStats = filteredStats.filter(s => {
+    // 5. Gráfico de Tiempo Total de Reproducción (Reels) - Desglosado por Plataforma
+    // Agrupar stats por guion para tener desglose
+    const guionStatsMap = {};
+
+    filteredStats.forEach(s => {
         const guion = guiones.find(g => g.id === s.guion_id);
-        return guion && guion.formato === 'Reel' && (s.metrics.total_playback_time > 0);
+        if (guion && guion.formato === 'Reel' && s.metrics.total_playback_time > 0) {
+            if (!guionStatsMap[guion.id]) {
+                guionStatsMap[guion.id] = {
+                    title: guion.titulo,
+                    fecha: guion.fecha,
+                    Instagram: 0,
+                    TikTok: 0,
+                    Facebook: 0
+                };
+            }
+            // Normalizar nombre de plataforma si es necesario
+            const p = s.platform;
+            if (guionStatsMap[guion.id].hasOwnProperty(p)) {
+                guionStatsMap[guion.id][p] += parseFloat(s.metrics.total_playback_time || 0);
+            }
+        }
     });
 
-    // Ordenar cronológicamente
-    reelPlaybackStats.sort((a, b) => {
-        const gA = guiones.find(g => g.id === a.guion_id);
-        const gB = guiones.find(g => g.id === b.guion_id);
-        return new Date(gA.fecha) - new Date(gB.fecha);
-    });
+    const sortedGuions = Object.values(guionStatsMap).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
-    if (reelPlaybackStats.length > 0) {
+    if (sortedGuions.length > 0) {
         const playbackCanvas = document.createElement('canvas');
         playbackCanvas.id = 'chart-total-playback';
 
@@ -3186,16 +3202,13 @@ function renderStatsCharts() {
         playbackCard.appendChild(playbackContainer);
         chartsGrid.appendChild(playbackCard);
 
-        const playbackLabels = [];
-        const playbackData = [];
+        // Forzar grid de 2 columnas si hay suficientes gráficas
+        chartsGrid.style.gridTemplateColumns = 'repeat(2, 1fr)';
 
-        reelPlaybackStats.forEach(s => {
-            const guion = guiones.find(g => g.id === s.guion_id);
-            playbackLabels.push(guion.titulo.length > 15 ? guion.titulo.substring(0, 15) + '...' : guion.titulo);
-
-            const playback = parseFloat(s.metrics.total_playback_time || 0);
-            playbackData.push(playback);
-        });
+        const playbackLabels = sortedGuions.map(g => g.title.length > 15 ? g.title.substring(0, 15) + '...' : g.title);
+        const dataIG = sortedGuions.map(g => g.Instagram);
+        const dataTK = sortedGuions.map(g => g.TikTok);
+        const dataFB = sortedGuions.map(g => g.Facebook);
 
         const ctxPlayback = playbackCanvas.getContext('2d');
         chartInstances['total-playback'] = new Chart(ctxPlayback, {
@@ -3204,12 +3217,32 @@ function renderStatsCharts() {
                 labels: playbackLabels,
                 datasets: [
                     {
-                        label: 'Tiempo Total de Reproducción',
-                        data: playbackData,
-                        backgroundColor: 'rgba(249, 115, 22, 0.7)', // Orange
-                        borderRadius: 4,
-                        barPercentage: 0.7,
-                        categoryPercentage: 0.9
+                        label: 'Instagram',
+                        data: dataIG,
+                        backgroundColor: '#e1306c',
+                        stack: 'Stack 0',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'TikTok',
+                        data: dataTK,
+                        backgroundColor: '#000000', // O un color oscuro visible en tema oscuro -> #25F4EE (cyan) o #FE2C55 (red) de tiktok? User usa tema oscuro?
+                        // TikTok branding: Black secondary, Cyan/Red accents. 
+                        // Negro puro en tema oscuro no se ve. Usaré un gris muy oscuro o el Cyan de TikTok #00f2ea ?
+                        // Mejor usar el standar: #69C9D0 (cyan-ish) para contraste o blanco/gris?
+                        // El código anterior usaba negro? No, no había desglose.
+                        // Usaré el color del texto secundario o un Teal.
+                        // TikTok oficial: #000000 (black) y #FFFFFF (white).
+                        backgroundColor: '#25F4EE', // Cyan TikTok
+                        stack: 'Stack 0',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Facebook',
+                        data: dataFB,
+                        backgroundColor: '#1877F2',
+                        stack: 'Stack 0',
+                        borderRadius: 4
                     }
                 ]
             },
@@ -3218,6 +3251,7 @@ function renderStatsCharts() {
                 maintainAspectRatio: false,
                 scales: {
                     y: {
+                        stacked: true,
                         beginAtZero: true,
                         grid: { color: 'rgba(255,255,255,0.05)' },
                         ticks: {
@@ -3229,19 +3263,26 @@ function renderStatsCharts() {
                         title: { display: true, text: 'Tiempo (HH:MM:SS)', color: '#94a3b8' }
                     },
                     x: {
+                        stacked: true,
                         grid: { display: false },
                         ticks: { color: '#94a3b8', maxRotation: 45, minRotation: 45 }
                     }
                 },
                 plugins: {
                     legend: {
-                        display: false // No necesita leyenda con un solo dataset
+                        position: 'top',
+                        labels: { color: '#94a3b8' }
                     },
                     tooltip: {
                         callbacks: {
                             label: function (context) {
                                 const seconds = context.parsed.y;
-                                return `Tiempo Total: ${formatSecondsToHMS(seconds)}`;
+                                const label = context.dataset.label;
+                                return `${label}: ${formatSecondsToHMS(seconds)}`;
+                            },
+                            footer: function (tooltipItems) {
+                                const total = tooltipItems.reduce((a, e) => a + e.parsed.y, 0);
+                                return 'Total: ' + formatSecondsToHMS(total);
                             }
                         }
                     }
