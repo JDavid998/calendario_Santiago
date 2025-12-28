@@ -1999,8 +1999,12 @@ function openGlobalStatsModal() {
 
 function loadGlobalStatsForm(monthStr) {
     const data = globalBusinessStats[monthStr] || { ig: {}, tk: {} };
+    document.getElementById('gs-ig-followers').value = data.ig?.followers || 0;
+    document.getElementById('gs-ig-followers-organic').value = data.ig?.followersOrganic || 0;
     document.getElementById('gs-ig-messages').value = data.ig?.messages || 0;
     document.getElementById('gs-ig-sales').value = data.ig?.sales || 0;
+    document.getElementById('gs-tk-followers').value = data.tk?.followers || 0;
+    document.getElementById('gs-tk-followers-organic').value = data.tk?.followersOrganic || 0;
     document.getElementById('gs-tk-messages').value = data.tk?.messages || 0;
     document.getElementById('gs-tk-sales').value = data.tk?.sales || 0;
 }
@@ -2011,10 +2015,14 @@ function saveGlobalStats() {
 
     const data = {
         ig: {
+            followers: parseInt(document.getElementById('gs-ig-followers').value) || 0,
+            followersOrganic: parseInt(document.getElementById('gs-ig-followers-organic').value) || 0,
             messages: parseInt(document.getElementById('gs-ig-messages').value) || 0,
             sales: parseInt(document.getElementById('gs-ig-sales').value) || 0
         },
         tk: {
+            followers: parseInt(document.getElementById('gs-tk-followers').value) || 0,
+            followersOrganic: parseInt(document.getElementById('gs-tk-followers-organic').value) || 0,
             messages: parseInt(document.getElementById('gs-tk-messages').value) || 0,
             sales: parseInt(document.getElementById('gs-tk-sales').value) || 0
         }
@@ -2025,6 +2033,7 @@ function saveGlobalStats() {
 
     closeModal('globalStatsModal');
     renderStatsSummary(); // Actualizar resumen
+    renderStatsCharts(); // Actualizar gráficas incluyendo la de seguidores
     alert('Totales guardados correctamente');
 }
 
@@ -2373,7 +2382,15 @@ function renderStatsCharts() {
     if (!chartsGrid) return;
     chartsGrid.innerHTML = '';
 
-    const activePlatforms = [...new Set(statistics.map(s => s.platform))];
+    // FIX: Aplicar filtro de plataforma a las plataformas activas
+    let activePlatforms;
+    if (currentStatsFilterPlatform !== 'all') {
+        // Si hay filtro de plataforma, solo mostrar esa plataforma
+        activePlatforms = [currentStatsFilterPlatform];
+    } else {
+        // Mostrar todas las plataformas activas
+        activePlatforms = [...new Set(statistics.map(s => s.platform))];
+    }
     if (activePlatforms.length === 0) return;
 
     // Destruir charts previos
@@ -2504,4 +2521,177 @@ function renderStatsCharts() {
             plugins: { legend: { display: false } }
         }
     });
+
+    // 3. Gráfico de Crecimiento de Seguidores por Mes (Line Chart)
+    const followersCanvas = document.createElement('canvas');
+    followersCanvas.id = 'chart-followers-growth';
+
+    const followersCard = document.createElement('div');
+    followersCard.className = 'chart-card';
+    followersCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); grid-column: 1 / -1;';
+    followersCard.innerHTML = `<h3 style="margin-bottom: 15px;">Crecimiento de Seguidores por Mes</h3>`;
+
+    const followersContainer = document.createElement('div');
+    followersContainer.style.position = 'relative';
+    followersContainer.style.height = '350px';
+    followersContainer.style.width = '100%';
+    followersContainer.appendChild(followersCanvas);
+
+    followersCard.appendChild(followersContainer);
+    chartsGrid.appendChild(followersCard);
+
+    // Preparar datos mensuales
+    const monthlyData = calculateMonthlyFollowers();
+
+    const ctxFollowers = followersCanvas.getContext('2d');
+    chartInstances['followers-growth'] = new Chart(ctxFollowers, {
+        type: 'line',
+        data: {
+            labels: monthlyData.labels,
+            datasets: [
+                {
+                    label: 'Instagram',
+                    data: monthlyData.instagram,
+                    borderColor: '#e1306c',
+                    backgroundColor: 'rgba(225, 48, 108, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                },
+                {
+                    label: 'TikTok',
+                    data: monthlyData.tiktok,
+                    borderColor: '#000000',
+                    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    ticks: { color: '#94a3b8' },
+                    title: { display: true, text: 'Nuevos Seguidores', color: '#94a3b8' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#94a3b8' }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { color: '#94a3b8' }
+                },
+                tooltip: {
+                    callbacks: {
+                        footer: function (tooltipItems) {
+                            return 'Incluye reels + orgánicos';
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
+
+// Función para calcular seguidores mensuales (reels + orgánicos)
+function calculateMonthlyFollowers() {
+    // Obtener todos los meses únicos de globalBusinessStats y guiones
+    const monthsSet = new Set();
+
+    // Meses de globalBusinessStats
+    Object.keys(globalBusinessStats).forEach(m => monthsSet.add(m));
+
+    // Meses de guiones publicados con stats
+    guiones.filter(g => g.estado === 'Publicado').forEach(g => {
+        try {
+            const date = new Date(g.fecha + 'T12:00:00');
+            const monthStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            monthsSet.add(monthStr);
+        } catch (e) { }
+    });
+
+    // Ordenar meses
+    const sortedMonths = Array.from(monthsSet).sort();
+
+    // Aplicar filtros
+    const filteredMonths = sortedMonths.filter(monthStr => {
+        const [year, month] = monthStr.split('-').map(Number);
+
+        if (currentStatsFilterYear !== 'all' && year !== parseInt(currentStatsFilterYear)) return false;
+        if (currentStatsFilterMonth !== 'all' && (month - 1) !== parseInt(currentStatsFilterMonth)) return false;
+
+        return true;
+    });
+
+    const labels = [];
+    const instagramData = [];
+    const tiktokData = [];
+
+    filteredMonths.forEach(monthStr => {
+        const [year, month] = monthStr.split('-').map(Number);
+        const monthName = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][month - 1];
+        labels.push(`${monthName} ${year}`);
+
+        // Calcular seguidores de Instagram y TikTok
+        let igFollowers = 0;
+        let tkFollowers = 0;
+
+        // 1. Seguidores de reels publicados ese mes
+        const guionesMonth = guiones.filter(g => {
+            if (g.estado !== 'Publicado') return false;
+            try {
+                const gDate = new Date(g.fecha + 'T12:00:00');
+                return gDate.getFullYear() === year && (gDate.getMonth() + 1) === month;
+            } catch (e) { return false; }
+        });
+
+        guionesMonth.forEach(g => {
+            // Solo contar Reels
+            if (g.formato === 'Reel') {
+                g.plataformas.forEach(platform => {
+                    const stat = statistics.find(s => s.guion_id === g.id && s.platform === platform);
+                    if (stat && stat.metrics.followers) {
+                        if (platform === 'Instagram') {
+                            igFollowers += stat.metrics.followers;
+                        } else if (platform === 'TikTok') {
+                            tkFollowers += stat.metrics.followers;
+                        }
+                    }
+                });
+            }
+        });
+
+        // 2. Agregar seguidores orgánicos del mes
+        const globalData = globalBusinessStats[monthStr];
+        if (globalData) {
+            igFollowers += (globalData.ig?.followersOrganic || 0);
+            tkFollowers += (globalData.tk?.followersOrganic || 0);
+        }
+
+        // Aplicar filtro de plataforma si está activo
+        if (currentStatsFilterPlatform === 'Instagram') {
+            instagramData.push(igFollowers);
+            tiktokData.push(0); // Ocultar TikTok
+        } else if (currentStatsFilterPlatform === 'TikTok') {
+            instagramData.push(0); // Ocultar Instagram
+            tiktokData.push(tkFollowers);
+        } else {
+            // Mostrar ambas
+            instagramData.push(igFollowers);
+            tiktokData.push(tkFollowers);
+        }
+    });
+
+    return { labels, instagram: instagramData, tiktok: tiktokData };
+}
+
