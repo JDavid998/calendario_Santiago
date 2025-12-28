@@ -2025,14 +2025,11 @@ function renderStatisticsUI() {
         btn.style.marginLeft = 'auto'; // Push to right
         btn.innerHTML = '📊 Ingresar Totales Mes';
         btn.onclick = () => openGlobalStatsModal();
+        filterContainer.appendChild(btn);
     }
-
 
     updateAll();
 }
-
-// Variables Globales para Metricas de Negocio (Persistencia Local por ahora)
-let globalBusinessStats = {};
 
 function openGlobalStatsModal() {
     openModal('globalStatsModal');
@@ -2857,7 +2854,7 @@ function renderStatsCharts() {
         }
     });
 }
-}
+
 
 // Función para calcular seguidores ACUMULATIVOS día a día (reels + orgánicos)
 function calculateMonthlyFollowers() {
