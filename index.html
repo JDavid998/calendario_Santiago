@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 </head>
 
 <body>
@@ -322,7 +323,7 @@
                 </button>
             </div>
             <div id="statsSummary"
-                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 25px;">
                 <!-- Cards generadas dinámicamente -->
             </div>
 
@@ -675,12 +676,6 @@
 
                     <h4 style="margin-bottom:10px; color: var(--primary);">Instagram</h4>
                     <div class="form-group">
-                        <label>Nuevos Seguidores (desde Reels)</label>
-                        <input type="number" id="gs-ig-followers" class="form-control" placeholder="0">
-                        <small style="color: var(--text-secondary); font-size: 0.8rem;">Se calculan automáticamente
-                            desde los reels publicados</small>
-                    </div>
-                    <div class="form-group">
                         <label>Seguidores Orgánicos</label>
                         <input type="number" id="gs-ig-followers-organic" class="form-control" placeholder="0">
                         <small style="color: var(--text-secondary); font-size: 0.8rem;">Seguidores ganados fuera de los
@@ -696,12 +691,6 @@
                     </div>
 
                     <h4 style="margin: 20px 0 10px; color: var(--primary);">TikTok</h4>
-                    <div class="form-group">
-                        <label>Nuevos Seguidores (desde Reels)</label>
-                        <input type="number" id="gs-tk-followers" class="form-control" placeholder="0">
-                        <small style="color: var(--text-secondary); font-size: 0.8rem;">Se calculan automáticamente
-                            desde los reels publicados</small>
-                    </div>
                     <div class="form-group">
                         <label>Seguidores Orgánicos</label>
                         <input type="number" id="gs-tk-followers-organic" class="form-control" placeholder="0">

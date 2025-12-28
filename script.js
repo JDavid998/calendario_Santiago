@@ -1999,11 +1999,9 @@ function openGlobalStatsModal() {
 
 function loadGlobalStatsForm(monthStr) {
     const data = globalBusinessStats[monthStr] || { ig: {}, tk: {} };
-    document.getElementById('gs-ig-followers').value = data.ig?.followers || 0;
     document.getElementById('gs-ig-followers-organic').value = data.ig?.followersOrganic || 0;
     document.getElementById('gs-ig-messages').value = data.ig?.messages || 0;
     document.getElementById('gs-ig-sales').value = data.ig?.sales || 0;
-    document.getElementById('gs-tk-followers').value = data.tk?.followers || 0;
     document.getElementById('gs-tk-followers-organic').value = data.tk?.followersOrganic || 0;
     document.getElementById('gs-tk-messages').value = data.tk?.messages || 0;
     document.getElementById('gs-tk-sales').value = data.tk?.sales || 0;
@@ -2015,13 +2013,11 @@ function saveGlobalStats() {
 
     const data = {
         ig: {
-            followers: parseInt(document.getElementById('gs-ig-followers').value) || 0,
             followersOrganic: parseInt(document.getElementById('gs-ig-followers-organic').value) || 0,
             messages: parseInt(document.getElementById('gs-ig-messages').value) || 0,
             sales: parseInt(document.getElementById('gs-ig-sales').value) || 0
         },
         tk: {
-            followers: parseInt(document.getElementById('gs-tk-followers').value) || 0,
             followersOrganic: parseInt(document.getElementById('gs-tk-followers-organic').value) || 0,
             messages: parseInt(document.getElementById('gs-tk-messages').value) || 0,
             sales: parseInt(document.getElementById('gs-tk-sales').value) || 0
@@ -2185,30 +2181,35 @@ function renderStatsSummary() {
     const iconMessages = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
     const iconSales = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>`;
 
-    // Renderizar Cards (Incluyendo nuevos)
+    // Renderizar Cards (Incluyendo todos los metrics)
     const metrics = [
         { label: 'Vistas Totales', value: totalViews.toLocaleString(), icon: iconViews, color: '#3b82f6' },
         { label: 'Likes Totales', value: totalLikes.toLocaleString(), icon: iconLikes, color: '#ec4899' },
-        { label: 'Mensajes', value: totalMessages.toLocaleString(), icon: iconMessages, color: '#8b5cf6' },
+        { label: 'Comentarios', value: totalComments.toLocaleString(), icon: iconComments, color: '#14b8a6' },
+        { label: 'Compartidos', value: totalShares.toLocaleString(), icon: iconShares, color: '#f59e0b' },
+        { label: 'Guardados', value: totalSaves.toLocaleString(), icon: iconSaves, color: '#8b5cf6' },
+        { label: 'Mensajes', value: totalMessages.toLocaleString(), icon: iconMessages, color: '#6366f1' },
         { label: 'Ventas Cerradas', value: totalSales.toLocaleString(), icon: iconSales, color: '#10b981' },
-        { label: 'Engagement', value: avgEngagement + '%', icon: iconEng, color: '#f59e0b' }
+        { label: 'Engagement', value: avgEngagement + '%', icon: iconEng, color: '#f97316' }
     ];
 
     metrics.forEach(m => {
         const card = document.createElement('div');
         card.style.background = 'var(--bg-secondary)';
-        card.style.padding = '15px';
-        card.style.borderRadius = '12px';
+        card.style.padding = '12px';
+        card.style.borderRadius = '10px';
         card.style.border = '1px solid var(--border-color)';
         card.style.display = 'flex';
         card.style.alignItems = 'center';
-        card.style.gap = '12px';
+        card.style.gap = '10px';
 
         card.innerHTML = `
-            <div style="background: ${m.color}20; padding: 10px; border-radius: 10px; color: ${m.color}; display: flex; align-items: center; justify-content: center;">${m.icon}</div>
-            <div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary);">${m.label}</div>
-                <div style="font-size: 1.25rem; font-weight: bold; color: var(--text-primary);">${m.value}</div>
+            <div style="background: ${m.color}20; padding: 8px; border-radius: 8px; color: ${m.color}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <div style="width: 20px; height: 20px;">${m.icon}</div>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 2px;">${m.label}</div>
+                <div style="font-size: 1.1rem; font-weight: bold; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${m.value}</div>
             </div>
         `;
         summaryContainer.appendChild(card);
@@ -2475,7 +2476,24 @@ function renderStatsCharts() {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'right', labels: { color: '#94a3b8' } }
+                legend: { position: 'right', labels: { color: '#94a3b8', padding: 15, font: { size: 11 } } },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            return `${label}: ${value.toLocaleString()} vistas`;
+                        }
+                    }
+                },
+                datalabels: {
+                    color: '#fff',
+                    font: { weight: 'bold', size: 11 },
+                    formatter: (value, ctx) => {
+                        if (value === 0) return '';
+                        return value.toLocaleString();
+                    }
+                }
             }
         }
     });
@@ -2518,7 +2536,16 @@ function renderStatsCharts() {
                 y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
                 x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
             },
-            plugins: { legend: { display: false } }
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'top',
+                    color: '#94a3b8',
+                    font: { weight: 'bold', size: 11 },
+                    formatter: (value) => value + '%'
+                }
+            }
         }
     });
 
@@ -2529,7 +2556,7 @@ function renderStatsCharts() {
     const followersCard = document.createElement('div');
     followersCard.className = 'chart-card';
     followersCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); grid-column: 1 / -1;';
-    followersCard.innerHTML = `<h3 style="margin-bottom: 15px;">Crecimiento de Seguidores por Mes</h3>`;
+    followersCard.innerHTML = `<h3 style="margin-bottom: 15px;">Crecimiento Acumulativo de Seguidores</h3>`;
 
     const followersContainer = document.createElement('div');
     followersContainer.style.position = 'relative';
@@ -2543,33 +2570,41 @@ function renderStatsCharts() {
     // Preparar datos mensuales
     const monthlyData = calculateMonthlyFollowers();
 
+    // Construir datasets dinámicamente según filtro de plataforma
+    const datasets = [];
+
+    if (currentStatsFilterPlatform === 'all' || currentStatsFilterPlatform === 'Instagram') {
+        datasets.push({
+            label: 'Instagram',
+            data: monthlyData.instagram,
+            borderColor: '#e1306c',
+            backgroundColor: 'rgba(225, 48, 108, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6
+        });
+    }
+
+    if (currentStatsFilterPlatform === 'all' || currentStatsFilterPlatform === 'TikTok') {
+        datasets.push({
+            label: 'TikTok',
+            data: monthlyData.tiktok,
+            borderColor: '#000000',
+            backgroundColor: 'rgba(0, 0, 0, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6
+        });
+    }
+
     const ctxFollowers = followersCanvas.getContext('2d');
     chartInstances['followers-growth'] = new Chart(ctxFollowers, {
         type: 'line',
         data: {
             labels: monthlyData.labels,
-            datasets: [
-                {
-                    label: 'Instagram',
-                    data: monthlyData.instagram,
-                    borderColor: '#e1306c',
-                    backgroundColor: 'rgba(225, 48, 108, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
-                },
-                {
-                    label: 'TikTok',
-                    data: monthlyData.tiktok,
-                    borderColor: '#000000',
-                    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
-                }
-            ]
+            datasets: datasets
         },
         options: {
             responsive: true,
@@ -2593,6 +2628,11 @@ function renderStatsCharts() {
                 },
                 tooltip: {
                     callbacks: {
+                        label: function (context) {
+                            const label = context.dataset.label || '';
+                            const value = context.parsed.y || 0;
+                            return `${label}: ${value.toLocaleString()} seguidores (acumulado)`;
+                        },
                         footer: function (tooltipItems) {
                             return 'Incluye reels + orgánicos';
                         }
@@ -2603,92 +2643,117 @@ function renderStatsCharts() {
     });
 }
 
-// Función para calcular seguidores mensuales (reels + orgánicos)
+// Función para calcular seguidores ACUMULATIVOS día a día (reels + orgánicos)
 function calculateMonthlyFollowers() {
-    // Obtener todos los meses únicos de globalBusinessStats y guiones
-    const monthsSet = new Set();
+    // Recolectar todas las fechas únicas de guiones publicados
+    const datesSet = new Set();
 
-    // Meses de globalBusinessStats
-    Object.keys(globalBusinessStats).forEach(m => monthsSet.add(m));
-
-    // Meses de guiones publicados con stats
     guiones.filter(g => g.estado === 'Publicado').forEach(g => {
         try {
             const date = new Date(g.fecha + 'T12:00:00');
-            const monthStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            monthsSet.add(monthStr);
+            datesSet.add(g.fecha); // Formato: YYYY-MM-DD
         } catch (e) { }
     });
 
-    // Ordenar meses
-    const sortedMonths = Array.from(monthsSet).sort();
+    // Ordenar fechas
+    const sortedDates = Array.from(datesSet).sort();
 
-    // Aplicar filtros
-    const filteredMonths = sortedMonths.filter(monthStr => {
-        const [year, month] = monthStr.split('-').map(Number);
+    if (sortedDates.length === 0) {
+        return { labels: [], instagram: [], tiktok: [] };
+    }
+
+    // Aplicar filtros de año y mes
+    const filteredDates = sortedDates.filter(dateStr => {
+        const date = new Date(dateStr + 'T12:00:00');
+        const year = date.getFullYear();
+        const month = date.getMonth();
 
         if (currentStatsFilterYear !== 'all' && year !== parseInt(currentStatsFilterYear)) return false;
-        if (currentStatsFilterMonth !== 'all' && (month - 1) !== parseInt(currentStatsFilterMonth)) return false;
+        if (currentStatsFilterMonth !== 'all' && month !== parseInt(currentStatsFilterMonth)) return false;
 
         return true;
     });
+
+    if (filteredDates.length === 0) {
+        return { labels: [], instagram: [], tiktok: [] };
+    }
 
     const labels = [];
     const instagramData = [];
     const tiktokData = [];
 
-    filteredMonths.forEach(monthStr => {
-        const [year, month] = monthStr.split('-').map(Number);
-        const monthName = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][month - 1];
-        labels.push(`${monthName} ${year}`);
+    // Variables para acumulación
+    let igAccumulator = 0;
+    let tkAccumulator = 0;
 
-        // Calcular seguidores de Instagram y TikTok
-        let igFollowers = 0;
-        let tkFollowers = 0;
+    // Procesar cada fecha
+    filteredDates.forEach(dateStr => {
+        const date = new Date(dateStr + 'T12:00:00');
 
-        // 1. Seguidores de reels publicados ese mes
-        const guionesMonth = guiones.filter(g => {
-            if (g.estado !== 'Publicado') return false;
-            try {
-                const gDate = new Date(g.fecha + 'T12:00:00');
-                return gDate.getFullYear() === year && (gDate.getMonth() + 1) === month;
-            } catch (e) { return false; }
-        });
+        // Formatear label (ej: "15 Ene")
+        const day = date.getDate();
+        const monthName = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][date.getMonth()];
+        labels.push(`${day} ${monthName}`);
 
-        guionesMonth.forEach(g => {
+        // Calcular seguidores de ese día
+        let igFollowersToday = 0;
+        let tkFollowersToday = 0;
+
+        // Buscar reels publicados en esta fecha
+        const guionesDay = guiones.filter(g => g.estado === 'Publicado' && g.fecha === dateStr);
+
+        guionesDay.forEach(g => {
             // Solo contar Reels
             if (g.formato === 'Reel') {
                 g.plataformas.forEach(platform => {
                     const stat = statistics.find(s => s.guion_id === g.id && s.platform === platform);
                     if (stat && stat.metrics.followers) {
                         if (platform === 'Instagram') {
-                            igFollowers += stat.metrics.followers;
+                            igFollowersToday += stat.metrics.followers;
                         } else if (platform === 'TikTok') {
-                            tkFollowers += stat.metrics.followers;
+                            tkFollowersToday += stat.metrics.followers;
                         }
                     }
                 });
             }
         });
 
-        // 2. Agregar seguidores orgánicos del mes
-        const globalData = globalBusinessStats[monthStr];
-        if (globalData) {
-            igFollowers += (globalData.ig?.followersOrganic || 0);
-            tkFollowers += (globalData.tk?.followersOrganic || 0);
-        }
+        // ACUMULAR (sumar a los anteriores)
+        igAccumulator += igFollowersToday;
+        tkAccumulator += tkFollowersToday;
 
-        // Aplicar filtro de plataforma si está activo
-        if (currentStatsFilterPlatform === 'Instagram') {
-            instagramData.push(igFollowers);
-            tiktokData.push(0); // Ocultar TikTok
-        } else if (currentStatsFilterPlatform === 'TikTok') {
-            instagramData.push(0); // Ocultar Instagram
-            tiktokData.push(tkFollowers);
-        } else {
-            // Mostrar ambas
-            instagramData.push(igFollowers);
-            tiktokData.push(tkFollowers);
+        // Guardar datos acumulados (el filtrado se hace a nivel de chart)
+        instagramData.push(igAccumulator);
+        tiktokData.push(tkAccumulator);
+    });
+
+    // Agregar seguidores orgánicos al final (se suman al acumulado final)
+    // Los orgánicos se ingresan por mes, así que los agregamos al último día del mes correspondiente
+    Object.entries(globalBusinessStats).forEach(([monthStr, data]) => {
+        const [year, month] = monthStr.split('-').map(Number);
+
+        // Verificar si este mes está en los filtros
+        if (currentStatsFilterYear !== 'all' && year !== parseInt(currentStatsFilterYear)) return;
+        if (currentStatsFilterMonth !== 'all' && (month - 1) !== parseInt(currentStatsFilterMonth)) return;
+
+        // Buscar el último día de este mes en nuestros datos
+        const lastDayOfMonth = filteredDates.find(dateStr => {
+            const date = new Date(dateStr + 'T12:00:00');
+            return date.getFullYear() === year && (date.getMonth() + 1) === month;
+        });
+
+        if (lastDayOfMonth) {
+            const index = filteredDates.indexOf(lastDayOfMonth);
+            if (index !== -1) {
+                // Sumar orgánicos al acumulado desde este punto en adelante
+                const igOrganic = data.ig?.followersOrganic || 0;
+                const tkOrganic = data.tk?.followersOrganic || 0;
+
+                for (let i = index; i < instagramData.length; i++) {
+                    instagramData[i] += igOrganic;
+                    tiktokData[i] += tkOrganic;
+                }
+            }
         }
     });
 
