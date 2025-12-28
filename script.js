@@ -333,9 +333,6 @@ function showWorkspaceSelector() {
             ${icon}
             <div class="workspace-name">${ws.display_name}</div>
             <div class="workspace-desc">Calendario ${ws.display_name.toLowerCase()}</div>
-            <button class="edit-ws-btn" onclick="openEditWorkspaceModal('${ws.name}', event)" title="Editar" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-            </button>
         `;
         button.style.position = 'relative'; // Ensure positioning context
 
@@ -1856,28 +1853,11 @@ function renderWorkspacesList() {
     let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
 
     workspaces.forEach(ws => {
-        const isDefault = ws.name === 'personal' || ws.name === 'maacline';
-        const deleteBtn = isDefault
-            ? ''
-            : `<button onclick="deleteWorkspace(${ws.id})" class="btn-icon btn-delete" style="flex-shrink: 0;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
-                </button>`;
-
-        html += `
-            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <div>
-                        <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">${ws.display_name}</div>
-                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 4px;">ID: ${ws.name}</div>
-                        ${isDefault ? '<div style="font-size: 0.85rem; color: var(--primary-light);">Calendario predeterminado</div>' : ''}
-                    </div>
-                    ${deleteBtn}
-                </div>
-            </div>
-        `;
+                    </div >
+            ${ deleteBtn }
+                </div >
+            </div >
+            `;
     });
 
     html += '</div>';
@@ -1929,7 +1909,7 @@ async function deleteWorkspace(id) {
     }
 
     try {
-        const response = await fetch(`/api/data?action=deleteWorkspace&workspaceId=${id}`, {
+        const response = await fetch(`/ api / data ? action = deleteWorkspace & workspaceId=${ id } `, {
             method: 'DELETE'
         });
 
@@ -1959,7 +1939,7 @@ function renderUserCalendarsCheckboxes() {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.value = ws.name;
-        checkbox.id = `access_${ws.name}`;
+        checkbox.id = `access_${ ws.name } `;
 
         // Marcar MAAC Line por defecto
         if (ws.name === 'maacline') {
@@ -2059,7 +2039,7 @@ function openGlobalStatsModal() {
 }
 
 function loadGlobalStatsForForm(month, year) {
-    const key = `${year}-${String(month).padStart(2, '0')}`;
+    const key = `${ year } -${ String(month).padStart(2, '0') } `;
     const data = globalBusinessStats[key] || { messages: 0, sales: 0 };
 
     document.getElementById('statsMessages').value = data.messages || 0;
@@ -2072,7 +2052,7 @@ function saveGlobalStats() {
     const messages = parseInt(document.getElementById('statsMessages').value) || 0;
     const sales = parseInt(document.getElementById('statsSales').value) || 0;
 
-    const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+    const monthStr = `${ year } -${ String(month).padStart(2, '0') } `;
 
     const data = {
         messages,
@@ -2084,7 +2064,7 @@ function saveGlobalStats() {
 
     // Guardar con separación por workspace
     if (IS_LOCAL_MODE) {
-        localStorage.setItem(`local_globalStats_${currentWorkspace}`, JSON.stringify(globalBusinessStats));
+        localStorage.setItem(`local_globalStats_${ currentWorkspace } `, JSON.stringify(globalBusinessStats));
     } else {
         // Guardar en base de datos
         fetch('/api/data?action=saveGlobalStats', {
@@ -2113,7 +2093,7 @@ function saveGlobalStats() {
     // Calcular el último día del mes seleccionado
     const [year, month] = monthStr.split('-').map(Number);
     const lastDay = new Date(year, month, 0).getDate(); // Día 0 del siguiente mes = último día del mes actual
-    const savedDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    const savedDate = `${ year } -${ String(month).padStart(2, '0') } -${ String(lastDay).padStart(2, '0') } `;
 
     const data = {
         savedDate: savedDate, // Último día del mes seleccionado
@@ -2138,7 +2118,7 @@ function saveGlobalStats() {
 
     // Guardar con separación por workspace
     if (IS_LOCAL_MODE) {
-        localStorage.setItem(`local_globalStats_${currentWorkspace}`, JSON.stringify(globalBusinessStats));
+        localStorage.setItem(`local_globalStats_${ currentWorkspace } `, JSON.stringify(globalBusinessStats));
     } else {
         // Guardar en base de datos
         fetch('/api/data?action=saveGlobalStats', {
@@ -2215,10 +2195,10 @@ function renderStatsEntryList() {
             : '<span class="status-badge status-idea" style="background: var(--bg-tertiary); color: var(--text-secondary); font-size: 0.7rem; padding: 2px 6px;">Sin Datos</span>';
 
         card.innerHTML = `
-            <div class="guion-card-header">
+            < div class="guion-card-header" >
                 <span class="guion-date">${g.fecha}</span>
-                ${statusBadge}
-            </div>
+                ${ statusBadge }
+            </div >
             <h3 class="guion-title">${g.titulo}</h3>
             <div class="guion-meta">
                 <span class="guion-format format-${(g.formato || 'Carrusel').toLowerCase()}">${g.formato || 'Carrusel'}</span>
@@ -2303,14 +2283,14 @@ function renderStatsSummary() {
     const avgEngagement = (filteredStats.reduce((sum, s) => sum + parseFloat(s.metrics.engagement_rate || 0), 0) / (filteredStats.length || 1)).toFixed(2);
 
     // Iconos SVG
-    const iconViews = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
-    const iconLikes = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
-    const iconComments = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>`;
-    const iconShares = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>`;
-    const iconSaves = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>`;
-    const iconEng = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>`;
-    const iconMessages = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
-    const iconSales = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>`;
+    const iconViews = `< svg width = "24" height = "24" viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width="2" stroke - linecap="round" stroke - linejoin="round" ><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg > `;
+    const iconLikes = `< svg width = "24" height = "24" viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width="2" stroke - linecap="round" stroke - linejoin="round" > <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg > `;
+    const iconComments = `< svg width = "24" height = "24" viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width="2" stroke - linecap="round" stroke - linejoin="round" > <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg > `;
+    const iconShares = `< svg width = "24" height = "24" viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width="2" stroke - linecap="round" stroke - linejoin="round" ><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg > `;
+    const iconSaves = `< svg width = "24" height = "24" viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width="2" stroke - linecap="round" stroke - linejoin="round" > <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg > `;
+    const iconEng = `< svg width = "24" height = "24" viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width="2" stroke - linecap="round" stroke - linejoin="round" > <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg > `;
+    const iconMessages = `< svg width = "24" height = "24" viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width="2" stroke - linecap="round" stroke - linejoin="round" > <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg > `;
+    const iconSales = `< svg width = "24" height = "24" viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width="2" stroke - linecap="round" stroke - linejoin="round" ><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg > `;
 
     // Renderizar Cards (Incluyendo todos los metrics)
     const metrics = [
@@ -2335,9 +2315,9 @@ function renderStatsSummary() {
         card.style.gap = '10px';
 
         card.innerHTML = `
-            <div style="background: ${m.color}20; padding: 8px; border-radius: 8px; color: ${m.color}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            < div style = "background: ${m.color}20; padding: 8px; border-radius: 8px; color: ${m.color}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" >
                 <div style="width: 20px; height: 20px;">${m.icon}</div>
-            </div>
+            </div >
             <div style="flex: 1; min-width: 0;">
                 <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 2px;">${m.label}</div>
                 <div style="font-size: 1.1rem; font-weight: bold; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${m.value}</div>
@@ -2351,7 +2331,7 @@ function openStatsModal(guionId) {
     const guion = guiones.find(g => g.id === guionId);
     if (!guion) return;
 
-    document.getElementById('statsModalTitle').textContent = `Estadísticas: ${guion.titulo}`;
+    document.getElementById('statsModalTitle').textContent = `Estadísticas: ${ guion.titulo } `;
     document.getElementById('saveStatsBtn').dataset.guionId = guionId;
 
     const container = document.getElementById('statsFormsContainer');
@@ -2374,7 +2354,7 @@ function openStatsModal(guionId) {
 
         // Helper para crear inputs
         const createInput = (label, key, value) => `
-            <div class="form-group">
+            < div class="form-group" >
                 <label>${label}</label>
                 <input type="number" class="stat-input" data-key="${key}" value="${value || 0}">
             </div>
@@ -2384,21 +2364,21 @@ function openStatsModal(guionId) {
         if (format === 'Historia') {
             // Historia: Visualizaciones, Reacciones, Mensajes Directos
             fieldsHTML = `
-                <div class="form-row">
-                    ${createInput('Visualizaciones', 'views', metrics.views)}
-                    ${createInput('Reacciones (Likes)', 'likes', metrics.likes)}
-                </div>
-                <div class="form-row">
-                    ${createInput('Mensajes Directos', 'messages', metrics.messages)}
-                </div>
-            `;
+            < div class="form-row" >
+                ${ createInput('Visualizaciones', 'views', metrics.views) }
+                    ${ createInput('Reacciones (Likes)', 'likes', metrics.likes) }
+                </div >
+            <div class="form-row">
+                ${createInput('Mensajes Directos', 'messages', metrics.messages)}
+            </div>
+        `;
         } else if (format === 'Carrusel') {
             // Carrusel: No tiempo promedio, no mensajes, no ventas
             fieldsHTML = `
-                <div class="form-row">
-                    ${createInput('Seguidores Obtenidos', 'followers', metrics.followers)}
-                    ${createInput('Visualizaciones', 'views', metrics.views)}
-                </div>
+            < div class="form-row" >
+                ${ createInput('Seguidores Obtenidos', 'followers', metrics.followers) }
+                    ${ createInput('Visualizaciones', 'views', metrics.views) }
+                </div >
                 <div class="form-row">
                     ${createInput('Likes', 'likes', metrics.likes)}
                     ${createInput('Comentarios', 'comments', metrics.comments)}
@@ -2407,14 +2387,14 @@ function openStatsModal(guionId) {
                     ${createInput('Compartidos', 'shares', metrics.shares)}
                     ${createInput('Guardados', 'saves', metrics.saves)}
                 </div>
-            `;
+        `;
         } else if (format === 'Reel') {
             // Reel: Todo lo standard + Tiempo Total antes de Tiempo Promedio. No mensajes, no ventas.
             fieldsHTML = `
-                <div class="form-row">
-                    ${createInput('Seguidores Obtenidos', 'followers', metrics.followers)}
-                    ${createInput('Visualizaciones', 'views', metrics.views)}
-                </div>
+            < div class="form-row" >
+                ${ createInput('Seguidores Obtenidos', 'followers', metrics.followers) }
+                    ${ createInput('Visualizaciones', 'views', metrics.views) }
+                </div >
                 <div class="form-row">
                     ${createInput('Likes', 'likes', metrics.likes)}
                     ${createInput('Comentarios', 'comments', metrics.comments)}
@@ -2427,18 +2407,21 @@ function openStatsModal(guionId) {
                      ${createInput('Tiempo Total Video (seg)', 'total_duration', metrics.total_duration)}
                     ${createInput('Tiempo Promedio Visualización (seg)', 'avg_watch_time', metrics.avg_watch_time)}
                 </div>
-            `;
+                <div class="form-row">
+                    ${createInput('Tiempo Total Reproducción (seg)', 'total_playback_time', metrics.total_playback_time)}
+                </div>
+        `;
         } else {
             // Fallback genérico
             fieldsHTML = `
-                 <div class="form-row">
-                    ${createInput('Vistas/Impresiones', 'views', metrics.views)}
-                    ${createInput('Interacciones', 'interactions', metrics.interactions || (metrics.likes || 0))}
-                </div>
-             `;
+            < div class="form-row" >
+                ${ createInput('Vistas/Impresiones', 'views', metrics.views) }
+                    ${ createInput('Interacciones', 'interactions', metrics.interactions || (metrics.likes || 0)) }
+                </div >
+            `;
         }
 
-        platformSection.innerHTML = `<h4 style="margin-bottom: 15px; color: var(--primary); text-transform: uppercase; font-size: 0.9rem;">${platform} <small style="color:var(--text-secondary); text-transform:none;">(${format})</small></h4><div class="platform-inputs" data-platform="${platform}">${fieldsHTML}</div>`;
+        platformSection.innerHTML = `< h4 style = "margin-bottom: 15px; color: var(--primary); text-transform: uppercase; font-size: 0.9rem;" > ${ platform } <small style="color:var(--text-secondary); text-transform:none;">(${format})</small></h4 > <div class="platform-inputs" data-platform="${platform}">${fieldsHTML}</div>`;
         container.appendChild(platformSection);
     });
 
@@ -2475,7 +2458,7 @@ async function saveStatistics() {
             if (IS_LOCAL_MODE) {
                 newStats.push({ guion_id: guionId, platform: platform, metrics: metrics });
             } else {
-                await fetch(`/api/data?action=saveStatistic&workspace=${currentWorkspace}`, {
+                await fetch(`/ api / data ? action = saveStatistic & workspace=${ currentWorkspace } `, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ guionId: guionId, platform: platform, metrics: metrics })
@@ -2486,13 +2469,13 @@ async function saveStatistics() {
         if (IS_LOCAL_MODE) {
             statistics = statistics.filter(s => s.guion_id !== guionId);
             statistics = [...statistics, ...newStats];
-            localStorage.setItem(`local_stats_${currentWorkspace}`, JSON.stringify(statistics));
+            localStorage.setItem(`local_stats_${ currentWorkspace } `, JSON.stringify(statistics));
             await new Promise(r => setTimeout(r, 200));
             renderStatisticsUI();
             closeModal('statsModal');
             alert('Estadísticas guardadas LOCALMENTE');
         } else {
-            const statsRes = await fetch(`/api/data?action=getStatistics&workspace=${currentWorkspace}`);
+            const statsRes = await fetch(`/ api / data ? action = getStatistics & workspace=${ currentWorkspace } `);
             if (statsRes.ok) {
                 statistics = await statsRes.json();
                 renderStatisticsUI();
@@ -2614,7 +2597,7 @@ function renderStatsCharts() {
                             label: function (context) {
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                 const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                return `${context.label}: ${context.parsed.toLocaleString()} vistas (${percentage}%)`;
+                                return `${ context.label }: ${ context.parsed.toLocaleString() } vistas(${ percentage } %)`;
                             }
                         }
                     },
@@ -2630,7 +2613,7 @@ function renderStatsCharts() {
         // Modo: Vistas por Reel Individual (filtrado por plataforma)
         unifiedCard.insertBefore(
             Object.assign(document.createElement('h3'), {
-                textContent: `Rendimiento de Reels - ${currentStatsFilterPlatform}`,
+                textContent: `Rendimiento de Reels - ${ currentStatsFilterPlatform } `,
                 style: 'margin-bottom: 15px;'
             }),
             unifiedContainer
@@ -2756,7 +2739,7 @@ function renderStatsCharts() {
     const followersCard = document.createElement('div');
     followersCard.className = 'chart-card';
     followersCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
-    followersCard.innerHTML = `<h3 style="margin-bottom: 15px;">Crecimiento Acumulativo de Seguidores</h3>`;
+    followersCard.innerHTML = `< h3 style = "margin-bottom: 15px;" > Crecimiento Acumulativo de Seguidores</h3 > `;
 
     const followersContainer = document.createElement('div');
     followersContainer.style.position = 'relative';
@@ -2855,9 +2838,9 @@ function renderStatsCharts() {
                             }
 
                             return [
-                                `${label}:`,
-                                `  Ganaste hoy: +${dailyGain.toLocaleString()}`,
-                                `  Total acumulado: ${currentValue.toLocaleString()}`
+                                `${ label }: `,
+                                `  Ganaste hoy: +${ dailyGain.toLocaleString() } `,
+                                `  Total acumulado: ${ currentValue.toLocaleString() } `
                             ];
                         },
                         footer: function (tooltipItems) {
@@ -2869,11 +2852,12 @@ function renderStatsCharts() {
         }
     });
 
-    // 4. Gráfico de Retención de Audiencia (Reels) - NUEVO
-    // Solo mostrar si hay datos de Reels con información de tiempo
-    const reelRetentionStats = statistics.filter(s => {
+    // 4. Gráfico de Métricas de Tiempo (Reels) - NUEVO
+    // Solo mostrar si hay datos de Reels con información de tiempo y estamos en formato Reel o viendo todo
+    // USAR filteredStats en lugar de statistics para respetar los filtros globales
+    const reelRetentionStats = filteredStats.filter(s => {
         const guion = guiones.find(g => g.id === s.guion_id);
-        return guion && guion.formato === 'Reel' && s.metrics.total_duration > 0;
+        return guion && guion.formato === 'Reel' && (s.metrics.total_duration > 0 || s.metrics.total_playback_time > 0);
     });
 
     if (reelRetentionStats.length > 0) {
@@ -2883,7 +2867,7 @@ function renderStatsCharts() {
         const retentionCard = document.createElement('div');
         retentionCard.className = 'chart-card';
         retentionCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
-        retentionCard.innerHTML = `<h3 style="margin-bottom: 15px;">Retención de Audiencia (Reels)</h3>`;
+        retentionCard.innerHTML = `< h3 style = "margin-bottom: 15px;" > Métricas de Tiempo(Reels)</h3 > `;
 
         const retentionContainer = document.createElement('div');
         retentionContainer.style.position = 'relative';
@@ -2897,7 +2881,7 @@ function renderStatsCharts() {
         const labels = [];
         const durationData = [];
         const watchTimeData = [];
-        const retentionRateData = []; // Calculado: (Avg / Total) * 100
+        const playbackData = [];
 
         reelRetentionStats.forEach(s => {
             const guion = guiones.find(g => g.id === s.guion_id);
@@ -2905,10 +2889,11 @@ function renderStatsCharts() {
 
             const total = parseFloat(s.metrics.total_duration || 0);
             const avg = parseFloat(s.metrics.avg_watch_time || 0);
+            const playback = parseFloat(s.metrics.total_playback_time || 0);
 
             durationData.push(total);
             watchTimeData.push(avg);
-            retentionRateData.push(total > 0 ? ((avg / total) * 100).toFixed(1) : 0);
+            playbackData.push(playback);
         });
 
         const ctxRetention = retentionCanvas.getContext('2d');
@@ -2918,28 +2903,28 @@ function renderStatsCharts() {
                 labels: labels,
                 datasets: [
                     {
-                        label: 'Duración Total (s)',
+                        label: 'Duración Video (s)',
                         data: durationData,
                         backgroundColor: 'rgba(59, 130, 246, 0.7)', // Blue
                         borderRadius: 4,
-                        order: 2
+                        barPercentage: 0.8,
+                        categoryPercentage: 0.8
                     },
                     {
                         label: 'Tiempo Promedio (s)',
                         data: watchTimeData,
                         backgroundColor: 'rgba(16, 185, 129, 0.7)', // Green
                         borderRadius: 4,
-                        order: 3
+                        barPercentage: 0.8,
+                        categoryPercentage: 0.8
                     },
                     {
-                        label: 'Tasa Retención (%)',
-                        data: retentionRateData,
-                        type: 'line',
-                        borderColor: '#f59e0b', // Amber/Orange
-                        borderWidth: 2,
-                        yAxisID: 'y1',
-                        pointBackgroundColor: '#f59e0b',
-                        order: 1
+                        label: 'Tiempo Total Rep. (s)',
+                        data: playbackData,
+                        backgroundColor: 'rgba(249, 115, 22, 0.7)', // Orange
+                        borderRadius: 4,
+                        barPercentage: 0.8,
+                        categoryPercentage: 0.8
                     }
                 ]
             },
@@ -2952,14 +2937,6 @@ function renderStatsCharts() {
                         grid: { color: 'rgba(255,255,255,0.05)' },
                         ticks: { color: '#94a3b8' },
                         title: { display: true, text: 'Segundos', color: '#94a3b8' }
-                    },
-                    y1: {
-                        position: 'right',
-                        beginAtZero: true,
-                        max: 100,
-                        grid: { display: false },
-                        ticks: { color: '#94a3b8', callback: v => v + '%' },
-                        title: { display: true, text: 'Retención %', color: '#94a3b8' }
                     },
                     x: {
                         grid: { display: false },
@@ -2974,10 +2951,7 @@ function renderStatsCharts() {
                     tooltip: {
                         callbacks: {
                             label: function (context) {
-                                const label = context.dataset.label;
-                                const value = context.parsed.y;
-                                if (label.includes('%')) return `${label}: ${value}%`;
-                                return `${label}: ${value}s`;
+                                return `${ context.dataset.label }: ${ context.parsed.y } s`;
                             }
                         }
                     }
@@ -3040,13 +3014,13 @@ function calculateMonthlyFollowers() {
         // Si hay filtro de mes, empezar el día 1 de ese mes
         const filterMonth = parseInt(currentStatsFilterMonth);
         const filterYear = currentStatsFilterYear !== 'all' ? parseInt(currentStatsFilterYear) : firstDate.getFullYear();
-        startDate = `${filterYear}-${String(filterMonth + 1).padStart(2, '0')}-01`;
+        startDate = `${ filterYear } -${ String(filterMonth + 1).padStart(2, '0') }-01`;
     } else if (currentStatsFilterYear !== 'all') {
         // Si hay filtro de año, empezar el 1 de enero de ese año
-        startDate = `${currentStatsFilterYear}-01-01`;
+        startDate = `${ currentStatsFilterYear }-01-01`;
     } else {
         // Sin filtros, empezar el día 1 del mes del primer dato
-        startDate = `${firstDate.getFullYear()}-${String(firstDate.getMonth() + 1).padStart(2, '0')}-01`;
+        startDate = `${ firstDate.getFullYear() } -${ String(firstDate.getMonth() + 1).padStart(2, '0') }-01`;
     }
 
     // Agregar fecha inicial si no está ya en los datos
@@ -3070,14 +3044,14 @@ function calculateMonthlyFollowers() {
         const date = new Date(dateStr + 'T12:00:00');
         const year = date.getFullYear();
         const month = date.getMonth() + 1;
-        const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+        const monthStr = `${ year } -${ String(month).padStart(2, '0') } `;
 
         // Formatear label
         const day = date.getDate();
         const monthName = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][date.getMonth()];
 
         // Mostrar día y mes
-        labels.push(`${day} ${monthName}`);
+        labels.push(`${ day } ${ monthName } `);
 
         let igFollowersToday = 0;
         let tkFollowersToday = 0;
@@ -3124,8 +3098,88 @@ function calculateMonthlyFollowers() {
     return { labels, instagram: instagramData, tiktok: tiktokData, facebook: facebookData };
 }
 
-// Función para abrir modal de edición de workspace (placeholder)
-function openEditWorkspaceModal(workspaceName, event) {
-    if (event) event.stopPropagation();
-    alert(`Editar calendario: ${workspaceName}\n(Funcionalidad en desarrollo - Backend requerido)`);
+// Función para editar usuario (Cliente Logic)
+window.editUser = async function(email) {
+    const users = await getUsersFromStorage();
+    const user = users[email];
+    
+    if (!user) return alert('Usuario no encontrado');
+
+    const modal = document.getElementById('addUserModal');
+    // Set text content properly
+    const titleEl = modal.querySelector('h2') || document.getElementById('modalTitleUser');
+    if (titleEl) titleEl.textContent = 'Editar Usuario';
+    
+    document.getElementById('newUserEmail').value = email;
+    document.getElementById('newUserEmail').disabled = true; // Email es ID
+    document.getElementById('newUserName').value = user.name || '';
+    document.getElementById('newUserPassword').value = ''; // No mostrar password
+    document.getElementById('newUserPassword').placeholder = '(Dejar en blanco para no cambiar)';
+    document.getElementById('newUserRole').value = user.role || 'client';
+    
+    // Checkboxes
+    const container = document.getElementById('userCalendarsContainer');
+    // Regenerar checkboxes para asegurar estado limpio
+    container.innerHTML = ''; 
+    // Usar la misma lógica de generación que en addUser
+    workspaces.forEach(ws => {
+        const div = document.createElement('div');
+        div.style.marginBottom = '5px';
+        const checked = user.canAccess && user.canAccess.includes(ws.name) ? 'checked' : '';
+        div.innerHTML = `
+            < input type = "checkbox" id = "access_${ws.name}" value = "${ws.name}" ${ checked }>
+                <label for="access_${ws.name}">${ws.display_name}</label>
+        `;
+        container.appendChild(div);
+    });
+
+    const saveBtn = document.getElementById('saveUserBtn');
+    saveBtn.textContent = 'Actualizar';
+    
+    // Swapping listener to updates
+    const newBtn = saveBtn.cloneNode(true);
+    saveBtn.parentNode.replaceChild(newBtn, saveBtn);
+    
+    newBtn.addEventListener('click', async () => {
+        const name = document.getElementById('newUserName').value.trim();
+        const password = document.getElementById('newUserPassword').value;
+        const role = document.getElementById('newUserRole').value;
+        
+        const canAccess = [];
+        container.querySelectorAll('input:checked').forEach(cb => canAccess.push(cb.value));
+        
+        if (!name) return alert('Nombre requerido');
+        if (canAccess.length === 0) return alert('Selecciona al menos un calendario');
+        
+        try {
+            await fetch('/api/data?action=updateUser', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    email, 
+                    name, 
+                    role, 
+                    canAccess,
+                    password: password || undefined 
+                })
+            });
+            
+            closeModal('addUserModal');
+            await renderUsersList();
+            alert('Usuario actualizado');
+            
+            // Restore modal state for next "New User"
+            if (titleEl) titleEl.textContent = 'Nuevo Usuario';
+            document.getElementById('newUserEmail').disabled = false;
+            document.getElementById('newUserPassword').placeholder = '';
+            newBtn.textContent = 'Guardar';
+            newBtn.addEventListener('click', window.saveNewUser);
+            
+        } catch (e) {
+            console.error(e);
+            alert('Error al actualizar usuario');
+        }
+    });
+
+    openModal('addUserModal');
 }
