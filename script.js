@@ -2267,10 +2267,10 @@ function renderStatsEntryList() {
             : '<span class="status-badge status-idea" style="background: var(--bg-tertiary); color: var(--text-secondary); font-size: 0.7rem; padding: 2px 6px;">Sin Datos</span>';
 
         card.innerHTML = `
-            < div class="guion-card-header" >
+            <div class="guion-card-header">
                 <span class="guion-date">${g.fecha}</span>
                 ${statusBadge}
-            </div >
+            </div>
             <h3 class="guion-title">${g.titulo}</h3>
             <div class="guion-meta">
                 <span class="guion-format format-${(g.formato || 'Carrusel').toLowerCase()}">${g.formato || 'Carrusel'}</span>
@@ -2355,14 +2355,14 @@ function renderStatsSummary() {
     const avgEngagement = (filteredStats.reduce((sum, s) => sum + parseFloat(s.metrics.engagement_rate || 0), 0) / (filteredStats.length || 1)).toFixed(2);
 
     // Iconos SVG
-    const iconViews = `< svg width = "24" height = "24" viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width="2" stroke - linecap="round" stroke - linejoin="round" ><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg > `;
-    const iconLikes = `< svg width = "24" height = "24" viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width="2" stroke - linecap="round" stroke - linejoin="round" > <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg > `;
-    const iconComments = `< svg width = "24" height = "24" viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width="2" stroke - linecap="round" stroke - linejoin="round" > <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg > `;
-    const iconShares = `< svg width = "24" height = "24" viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width="2" stroke - linecap="round" stroke - linejoin="round" ><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg > `;
-    const iconSaves = `< svg width = "24" height = "24" viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width="2" stroke - linecap="round" stroke - linejoin="round" > <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg > `;
-    const iconEng = `< svg width = "24" height = "24" viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width="2" stroke - linecap="round" stroke - linejoin="round" > <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg > `;
-    const iconMessages = `< svg width = "24" height = "24" viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width="2" stroke - linecap="round" stroke - linejoin="round" > <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg > `;
-    const iconSales = `< svg width = "24" height = "24" viewBox = "0 0 24 24" fill = "none" stroke = "currentColor" stroke - width="2" stroke - linecap="round" stroke - linejoin="round" ><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg > `;
+    const iconViews = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+    const iconLikes = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
+    const iconComments = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>`;
+    const iconShares = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>`;
+    const iconSaves = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>`;
+    const iconEng = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>`;
+    const iconMessages = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
+    const iconSales = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>`;
 
     // Renderizar Cards (Incluyendo todos los metrics)
     const metrics = [
@@ -2387,9 +2387,9 @@ function renderStatsSummary() {
         card.style.gap = '10px';
 
         card.innerHTML = `
-            < div style = "background: ${m.color}20; padding: 8px; border-radius: 8px; color: ${m.color}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" >
+            <div style="background: ${m.color}20; padding: 8px; border-radius: 8px; color: ${m.color}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                 <div style="width: 20px; height: 20px;">${m.icon}</div>
-            </div >
+            </div>
             <div style="flex: 1; min-width: 0;">
                 <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 2px;">${m.label}</div>
                 <div style="font-size: 1.1rem; font-weight: bold; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${m.value}</div>
@@ -2426,7 +2426,7 @@ function openStatsModal(guionId) {
 
         // Helper para crear inputs
         const createInput = (label, key, value) => `
-            < div class="form-group" >
+            <div class="form-group">
                 <label>${label}</label>
                 <input type="number" class="stat-input" data-key="${key}" value="${value || 0}">
             </div>
@@ -2436,10 +2436,10 @@ function openStatsModal(guionId) {
         if (format === 'Historia') {
             // Historia: Visualizaciones, Reacciones, Mensajes Directos
             fieldsHTML = `
-            < div class="form-row" >
+            <div class="form-row">
                 ${createInput('Visualizaciones', 'views', metrics.views)}
-                    ${createInput('Reacciones (Likes)', 'likes', metrics.likes)}
-                </div >
+                ${createInput('Reacciones (Likes)', 'likes', metrics.likes)}
+            </div>
             <div class="form-row">
                 ${createInput('Mensajes Directos', 'messages', metrics.messages)}
             </div>
@@ -2447,10 +2447,10 @@ function openStatsModal(guionId) {
         } else if (format === 'Carrusel') {
             // Carrusel: No tiempo promedio, no mensajes, no ventas
             fieldsHTML = `
-            < div class="form-row" >
+            <div class="form-row">
                 ${createInput('Seguidores Obtenidos', 'followers', metrics.followers)}
-                    ${createInput('Visualizaciones', 'views', metrics.views)}
-                </div >
+                ${createInput('Visualizaciones', 'views', metrics.views)}
+            </div>
                 <div class="form-row">
                     ${createInput('Likes', 'likes', metrics.likes)}
                     ${createInput('Comentarios', 'comments', metrics.comments)}
@@ -2463,10 +2463,10 @@ function openStatsModal(guionId) {
         } else if (format === 'Reel') {
             // Reel: Todo lo standard + Tiempo Total antes de Tiempo Promedio. No mensajes, no ventas.
             fieldsHTML = `
-            < div class="form-row" >
+            <div class="form-row">
                 ${createInput('Seguidores Obtenidos', 'followers', metrics.followers)}
-                    ${createInput('Visualizaciones', 'views', metrics.views)}
-                </div >
+                ${createInput('Visualizaciones', 'views', metrics.views)}
+            </div>
                 <div class="form-row">
                     ${createInput('Likes', 'likes', metrics.likes)}
                     ${createInput('Comentarios', 'comments', metrics.comments)}
@@ -2486,14 +2486,14 @@ function openStatsModal(guionId) {
         } else {
             // Fallback genérico
             fieldsHTML = `
-            < div class="form-row" >
+            <div class="form-row">
                 ${createInput('Vistas/Impresiones', 'views', metrics.views)}
-                    ${createInput('Interacciones', 'interactions', metrics.interactions || (metrics.likes || 0))}
-                </div >
+                ${createInput('Interacciones', 'interactions', metrics.interactions || (metrics.likes || 0))}
+            </div>
             `;
         }
 
-        platformSection.innerHTML = `< h4 style = "margin-bottom: 15px; color: var(--primary); text-transform: uppercase; font-size: 0.9rem;" > ${platform} <small style="color:var(--text-secondary); text-transform:none;">(${format})</small></h4 > <div class="platform-inputs" data-platform="${platform}">${fieldsHTML}</div>`;
+        platformSection.innerHTML = `<h4 style="margin-bottom: 15px; color: var(--primary); text-transform: uppercase; font-size: 0.9rem;">${platform} <small style="color:var(--text-secondary); text-transform:none;">(${format})</small></h4> <div class="platform-inputs" data-platform="${platform}">${fieldsHTML}</div>`;
         container.appendChild(platformSection);
     });
 
@@ -2530,7 +2530,7 @@ async function saveStatistics() {
             if (IS_LOCAL_MODE) {
                 newStats.push({ guion_id: guionId, platform: platform, metrics: metrics });
             } else {
-                await fetch(`/ api / data ? action = saveStatistic & workspace=${currentWorkspace} `, {
+                await fetch(`/api/data?action=saveStatistic&workspace=${currentWorkspace}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ guionId: guionId, platform: platform, metrics: metrics })
@@ -2541,13 +2541,13 @@ async function saveStatistics() {
         if (IS_LOCAL_MODE) {
             statistics = statistics.filter(s => s.guion_id !== guionId);
             statistics = [...statistics, ...newStats];
-            localStorage.setItem(`local_stats_${currentWorkspace} `, JSON.stringify(statistics));
+            localStorage.setItem(`local_stats_${currentWorkspace}`, JSON.stringify(statistics));
             await new Promise(r => setTimeout(r, 200));
             renderStatisticsUI();
             closeModal('statsModal');
             alert('Estadísticas guardadas LOCALMENTE');
         } else {
-            const statsRes = await fetch(`/ api / data ? action = getStatistics & workspace=${currentWorkspace} `);
+            const statsRes = await fetch(`/api/data?action=getStatistics&workspace=${currentWorkspace}`);
             if (statsRes.ok) {
                 statistics = await statsRes.json();
                 renderStatisticsUI();
@@ -2669,7 +2669,7 @@ function renderStatsCharts() {
                             label: function (context) {
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                 const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                return `${context.label}: ${context.parsed.toLocaleString()} vistas(${percentage} %)`;
+                                return `${context.label}: ${context.parsed.toLocaleString()} vistas (${percentage}%)`;
                             }
                         }
                     },
@@ -2685,7 +2685,7 @@ function renderStatsCharts() {
         // Modo: Vistas por Reel Individual (filtrado por plataforma)
         unifiedCard.insertBefore(
             Object.assign(document.createElement('h3'), {
-                textContent: `Rendimiento de Reels - ${currentStatsFilterPlatform} `,
+                textContent: `Rendimiento de Reels - ${currentStatsFilterPlatform}`,
                 style: 'margin-bottom: 15px;'
             }),
             unifiedContainer
