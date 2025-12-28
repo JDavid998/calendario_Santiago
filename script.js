@@ -1979,6 +1979,7 @@ function renderStatisticsUI() {
         filterContainer.appendChild(btn);
     }
 
+
     updateAll();
 }
 

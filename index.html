@@ -645,6 +645,58 @@
             </div>
         </div>
 
+        <!-- Modal Estadísticas Globales (Mensajes/Ventas/Seguidores) -->
+        <div id="globalStatsModal" class="modal">
+            <div class="modal-content"
+                style="max-width: 400px; background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary);">
+                <div class="modal-header">
+                    <h2 id="globalStatsTitle">Metas del Mes</h2>
+                    <span class="close-btn" onclick="closeModal('globalStatsModal')">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Mes de Referencia</label>
+                        <input type="month" id="globalStatsMonth" class="form-control"
+                            style="background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color);">
+                    </div>
+
+                    <hr style="margin: 20px 0; border-color: var(--border-color);">
+
+                    <h4 style="margin-bottom:10px; color: var(--primary);">Instagram</h4>
+                    <div class="form-group">
+                        <label>Nuevos Seguidores</label>
+                        <input type="number" id="gs-ig-followers" class="form-control" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Mensajes Recibidos</label>
+                        <input type="number" id="gs-ig-messages" class="form-control" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Ventas Cerradas</label>
+                        <input type="number" id="gs-ig-sales" class="form-control" placeholder="0">
+                    </div>
+
+                    <h4 style="margin: 20px 0 10px; color: var(--primary);">TikTok</h4>
+                    <div class="form-group">
+                        <label>Nuevos Seguidores</label>
+                        <input type="number" id="gs-tk-followers" class="form-control" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Mensajes Recibidos</label>
+                        <input type="number" id="gs-tk-messages" class="form-control" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Ventas Cerradas</label>
+                        <input type="number" id="gs-tk-sales" class="form-control" placeholder="0">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="closeModal('globalStatsModal')">Cancelar</button>
+                    <button class="btn-primary" onclick="saveGlobalStats()">Guardar Totales</button>
+                </div>
+            </div>
+        </div>
+
         <script src="script.js"></script>
 </body>
 
