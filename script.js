@@ -2572,31 +2572,44 @@ function renderStatsSummary() {
         return true;
     });
 
-    // --- CALCULO METRICAS GLOBALES (MENSAJES / VENTAS) ---
+    // --- CALCULO METRICAS GLOBALES (MENSAJES / VENTAS / SEGUIDORES ORG / PERDIDOS) ---
     // Logica: Sumar mensajes/ventas de globalBusinessStats que coincidan con el filtro de fecha
     let totalMessages = 0;
     let totalSales = 0;
+    let totalOrganic = 0;
+    let totalLost = 0;
 
     Object.entries(globalBusinessStats).forEach(([monthStr, data]) => {
-        const [year, month] = monthStr.split('-').map(Number);
+        // Soporte para claves antiguas con espacios
+        const cleanMonthStr = monthStr.replace(/\s+/g, '');
+        const [year, month] = cleanMonthStr.split('-').map(Number); // "2024-10" -> 2024, 10
 
         // Aplicar filtros de fecha a las metricas globales
         if (currentStatsFilterYear !== 'all' && year !== parseInt(currentStatsFilterYear)) return;
+        // month está 1-based, getMonth() es 0-based
         if (currentStatsFilterMonth !== 'all' && (month - 1) !== parseInt(currentStatsFilterMonth)) return;
 
         // Sumar según plataforma
         if (currentStatsFilterPlatform === 'all') {
             totalMessages += (data.ig?.messages || 0) + (data.tk?.messages || 0) + (data.fb?.messages || 0);
             totalSales += (data.ig?.sales || 0) + (data.tk?.sales || 0) + (data.fb?.sales || 0);
+            totalOrganic += (data.ig?.followersOrganic || 0) + (data.tk?.followersOrganic || 0) + (data.fb?.followersOrganic || 0);
+            totalLost += (data.ig?.followersLost || 0) + (data.tk?.followersLost || 0) + (data.fb?.followersLost || 0);
         } else if (currentStatsFilterPlatform === 'Instagram') {
             totalMessages += (data.ig?.messages || 0);
             totalSales += (data.ig?.sales || 0);
+            totalOrganic += (data.ig?.followersOrganic || 0);
+            totalLost += (data.ig?.followersLost || 0);
         } else if (currentStatsFilterPlatform === 'TikTok') {
             totalMessages += (data.tk?.messages || 0);
             totalSales += (data.tk?.sales || 0);
+            totalOrganic += (data.tk?.followersOrganic || 0);
+            totalLost += (data.tk?.followersLost || 0);
         } else if (currentStatsFilterPlatform === 'Facebook') {
             totalMessages += (data.fb?.messages || 0);
             totalSales += (data.fb?.sales || 0);
+            totalOrganic += (data.fb?.followersOrganic || 0);
+            totalLost += (data.fb?.followersLost || 0);
         }
     });
 
@@ -2620,6 +2633,8 @@ function renderStatsSummary() {
     const iconEng = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>`;
     const iconMessages = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
     const iconSales = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>`;
+    const iconOrganic = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polyline points="16 11 18 13 22 9"></polyline></svg>`;
+    const iconLost = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="18" y1="8" x2="23" y2="13"></line><line x1="23" y1="8" x2="18" y2="13"></line></svg>`;
 
     // Renderizar Cards (Incluyendo todos los metrics)
     const metrics = [
@@ -2630,7 +2645,9 @@ function renderStatsSummary() {
         { label: 'Guardados', value: totalSaves.toLocaleString(), icon: iconSaves, color: '#8b5cf6' },
         { label: 'Mensajes', value: totalMessages.toLocaleString(), icon: iconMessages, color: '#6366f1' },
         { label: 'Ventas Cerradas', value: totalSales.toLocaleString(), icon: iconSales, color: '#10b981' },
-        { label: 'Engagement', value: avgEngagement + '%', icon: iconEng, color: '#f97316' }
+        { label: 'Seguidores Orgánicos', value: totalOrganic.toLocaleString(), icon: iconOrganic, color: '#0ea5e9' },
+        { label: 'Seguidores Perdidos', value: totalLost.toLocaleString(), icon: iconLost, color: '#ef4444' },
+        { label: 'Engagement Promedio', value: avgEngagement + '%', icon: iconEng, color: '#f97316' }
     ];
 
     metrics.forEach(m => {
@@ -2642,6 +2659,7 @@ function renderStatsSummary() {
         card.style.display = 'flex';
         card.style.alignItems = 'center';
         card.style.gap = '10px';
+        card.style.minWidth = '200px';
 
         card.innerHTML = `
             <div style="background: ${m.color}20; padding: 8px; border-radius: 8px; color: ${m.color}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
