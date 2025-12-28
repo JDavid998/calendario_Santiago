@@ -2555,12 +2555,12 @@ function renderStatsCharts() {
 
     const followersCard = document.createElement('div');
     followersCard.className = 'chart-card';
-    followersCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); grid-column: 1 / -1;';
+    followersCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
     followersCard.innerHTML = `<h3 style="margin-bottom: 15px;">Crecimiento Acumulativo de Seguidores</h3>`;
 
     const followersContainer = document.createElement('div');
     followersContainer.style.position = 'relative';
-    followersContainer.style.height = '350px';
+    followersContainer.style.height = '300px';
     followersContainer.style.width = '100%';
     followersContainer.appendChild(followersCanvas);
 
@@ -2630,8 +2630,21 @@ function renderStatsCharts() {
                     callbacks: {
                         label: function (context) {
                             const label = context.dataset.label || '';
-                            const value = context.parsed.y || 0;
-                            return `${label}: ${value.toLocaleString()} seguidores (acumulado)`;
+                            const currentValue = context.parsed.y || 0;
+                            const dataIndex = context.dataIndex;
+
+                            // Calcular seguidores ganados ese día
+                            let dailyGain = currentValue;
+                            if (dataIndex > 0) {
+                                const previousValue = context.dataset.data[dataIndex - 1] || 0;
+                                dailyGain = currentValue - previousValue;
+                            }
+
+                            return [
+                                `${label}:`,
+                                `  Ganaste hoy: +${dailyGain.toLocaleString()}`,
+                                `  Total acumulado: ${currentValue.toLocaleString()}`
+                            ];
                         },
                         footer: function (tooltipItems) {
                             return 'Incluye reels + orgánicos';
@@ -2645,24 +2658,32 @@ function renderStatsCharts() {
 
 // Función para calcular seguidores ACUMULATIVOS día a día (reels + orgánicos)
 function calculateMonthlyFollowers() {
-    // Recolectar todas las fechas únicas de guiones publicados
-    const datesSet = new Set();
+    // 1. Recolectar todas las fechas de reels publicados
+    const reelDatesSet = new Set();
 
-    guiones.filter(g => g.estado === 'Publicado').forEach(g => {
+    guiones.filter(g => g.estado === 'Publicado' && g.formato === 'Reel').forEach(g => {
         try {
-            const date = new Date(g.fecha + 'T12:00:00');
-            datesSet.add(g.fecha); // Formato: YYYY-MM-DD
+            reelDatesSet.add(g.fecha); // Formato: YYYY-MM-DD
         } catch (e) { }
     });
 
-    // Ordenar fechas
-    const sortedDates = Array.from(datesSet).sort();
+    // 2. Recolectar fechas de meses con seguidores orgánicos (usar el primer día del mes)
+    const organicDatesSet = new Set();
+    Object.keys(globalBusinessStats).forEach(monthStr => {
+        const [year, month] = monthStr.split('-');
+        const firstDayOfMonth = `${year}-${month}-01`;
+        organicDatesSet.add(firstDayOfMonth);
+    });
+
+    // 3. Combinar ambas fechas
+    const allDatesSet = new Set([...reelDatesSet, ...organicDatesSet]);
+    const sortedDates = Array.from(allDatesSet).sort();
 
     if (sortedDates.length === 0) {
         return { labels: [], instagram: [], tiktok: [] };
     }
 
-    // Aplicar filtros de año y mes
+    // 4. Aplicar filtros de año y mes
     const filteredDates = sortedDates.filter(dateStr => {
         const date = new Date(dateStr + 'T12:00:00');
         const year = date.getFullYear();
@@ -2686,77 +2707,58 @@ function calculateMonthlyFollowers() {
     let igAccumulator = 0;
     let tkAccumulator = 0;
 
-    // Procesar cada fecha
+    // 5. Procesar cada fecha
     filteredDates.forEach(dateStr => {
         const date = new Date(dateStr + 'T12:00:00');
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const monthStr = `${year}-${String(month).padStart(2, '0')}`;
 
-        // Formatear label (ej: "15 Ene")
+        // Formatear label
         const day = date.getDate();
         const monthName = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][date.getMonth()];
-        labels.push(`${day} ${monthName}`);
 
-        // Calcular seguidores de ese día
+        // Si es día 01, mostrar mes completo en el label
+        if (day === 1) {
+            labels.push(`${monthName} ${year}`);
+        } else {
+            labels.push(`${day} ${monthName}`);
+        }
+
         let igFollowersToday = 0;
         let tkFollowersToday = 0;
 
-        // Buscar reels publicados en esta fecha
-        const guionesDay = guiones.filter(g => g.estado === 'Publicado' && g.fecha === dateStr);
+        // A. Sumar seguidores de reels publicados en esta fecha
+        const guionesDay = guiones.filter(g => g.estado === 'Publicado' && g.formato === 'Reel' && g.fecha === dateStr);
 
         guionesDay.forEach(g => {
-            // Solo contar Reels
-            if (g.formato === 'Reel') {
-                g.plataformas.forEach(platform => {
-                    const stat = statistics.find(s => s.guion_id === g.id && s.platform === platform);
-                    if (stat && stat.metrics.followers) {
-                        if (platform === 'Instagram') {
-                            igFollowersToday += stat.metrics.followers;
-                        } else if (platform === 'TikTok') {
-                            tkFollowersToday += stat.metrics.followers;
-                        }
+            g.plataformas.forEach(platform => {
+                const stat = statistics.find(s => s.guion_id === g.id && s.platform === platform);
+                if (stat && stat.metrics.followers) {
+                    if (platform === 'Instagram') {
+                        igFollowersToday += stat.metrics.followers;
+                    } else if (platform === 'TikTok') {
+                        tkFollowersToday += stat.metrics.followers;
                     }
-                });
-            }
+                }
+            });
         });
 
-        // ACUMULAR (sumar a los anteriores)
+        // B. Si es el primer día del mes, agregar seguidores orgánicos de ese mes
+        if (day === 1 && globalBusinessStats[monthStr]) {
+            const data = globalBusinessStats[monthStr];
+            igFollowersToday += (data.ig?.followersOrganic || 0);
+            tkFollowersToday += (data.tk?.followersOrganic || 0);
+        }
+
+        // Acumular
         igAccumulator += igFollowersToday;
         tkAccumulator += tkFollowersToday;
 
-        // Guardar datos acumulados (el filtrado se hace a nivel de chart)
+        // Guardar datos acumulados
         instagramData.push(igAccumulator);
         tiktokData.push(tkAccumulator);
     });
 
-    // Agregar seguidores orgánicos al final (se suman al acumulado final)
-    // Los orgánicos se ingresan por mes, así que los agregamos al último día del mes correspondiente
-    Object.entries(globalBusinessStats).forEach(([monthStr, data]) => {
-        const [year, month] = monthStr.split('-').map(Number);
-
-        // Verificar si este mes está en los filtros
-        if (currentStatsFilterYear !== 'all' && year !== parseInt(currentStatsFilterYear)) return;
-        if (currentStatsFilterMonth !== 'all' && (month - 1) !== parseInt(currentStatsFilterMonth)) return;
-
-        // Buscar el último día de este mes en nuestros datos
-        const lastDayOfMonth = filteredDates.find(dateStr => {
-            const date = new Date(dateStr + 'T12:00:00');
-            return date.getFullYear() === year && (date.getMonth() + 1) === month;
-        });
-
-        if (lastDayOfMonth) {
-            const index = filteredDates.indexOf(lastDayOfMonth);
-            if (index !== -1) {
-                // Sumar orgánicos al acumulado desde este punto en adelante
-                const igOrganic = data.ig?.followersOrganic || 0;
-                const tkOrganic = data.tk?.followersOrganic || 0;
-
-                for (let i = index; i < instagramData.length; i++) {
-                    instagramData[i] += igOrganic;
-                    tiktokData[i] += tkOrganic;
-                }
-            }
-        }
-    });
-
     return { labels, instagram: instagramData, tiktok: tiktokData };
 }
-
