@@ -2939,7 +2939,7 @@ function renderStatsCharts() {
         const retentionCard = document.createElement('div');
         retentionCard.className = 'chart-card';
         retentionCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
-        retentionCard.innerHTML = `< h3 style = "margin-bottom: 15px;" > Métricas de Tiempo(Reels)</h3 > `;
+        retentionCard.innerHTML = `<h3 style="margin-bottom: 15px;">Métricas de Tiempo (Reels)</h3>`;
 
         const retentionContainer = document.createElement('div');
         retentionContainer.style.position = 'relative';
