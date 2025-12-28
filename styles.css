@@ -1772,3 +1772,108 @@ h6,
 .view-detail-content .script-editor-table tr:hover {
     background: #f9f9f9;
 }
+
+/* ============================================
+   STATISTICS STYLES
+   ============================================ */
+
+.guion-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.guion-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.guion-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.guion-date {
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+}
+
+.guion-title {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+.guion-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.guion-format {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.format-reel {
+    background: rgba(236, 72, 153, 0.2);
+    color: #ec4899;
+}
+
+.format-carrusel {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+}
+
+.format-historia {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+}
+
+.guion-platforms {
+    display: flex;
+    gap: 4px;
+}
+
+.platform-tag {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.stats-charts-grid {
+    margin-bottom: 40px;
+}
+
+.stat-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-radius: 6px;
+}
+
+.stat-input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+.status-published {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+}

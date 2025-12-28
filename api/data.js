@@ -122,6 +122,30 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true });
         }
 
+        // --- ESTADÍSTICAS ---
+        if (action === 'getStatistics') {
+            const { month, year } = req.query;
+
+            // Si se pasa mes/año, podríamos filtrar, pero por ahora traemos todo el workspace
+            // y filtramos en frontend o hacemos un JOIN inteligente.
+            // Para simplificar y dado el volumen bajo, traemos todo del workspace.
+
+            const stats = await sql`SELECT * FROM statistics WHERE workspace = ${workspace}`;
+            return res.status(200).json(stats);
+        }
+
+        if (action === 'saveStatistic' && req.method === 'POST') {
+            const { guionId, platform, metrics } = req.body;
+
+            await sql`
+                INSERT INTO statistics (workspace, guion_id, platform, metrics)
+                VALUES (${workspace}, ${guionId}, ${platform}, ${metrics})
+                ON CONFLICT (workspace, guion_id, platform) 
+                DO UPDATE SET metrics = ${metrics}
+            `;
+            return res.status(200).json({ success: true });
+        }
+
         // --- WORKSPACES ---
         if (action === 'initWorkspaces' && req.method === 'POST') {
             // Crear tabla si no existe e insertar workspaces por defecto
@@ -142,7 +166,20 @@ export default async function handler(req, res) {
                 ON CONFLICT (name) DO NOTHING
             `;
 
-            return res.status(200).json({ success: true, message: 'Workspaces inicializados' });
+
+            await sql`
+                CREATE TABLE IF NOT EXISTS statistics (
+                    id SERIAL PRIMARY KEY,
+                    workspace VARCHAR(50) NOT NULL,
+                    guion_id INTEGER REFERENCES guiones(id) ON DELETE CASCADE,
+                    platform VARCHAR(50) NOT NULL,
+                    metrics JSONB NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(workspace, guion_id, platform)
+                )
+            `;
+
+            return res.status(200).json({ success: true, message: 'Workspaces y Tablas inicializados' });
         }
 
         if (action === 'getWorkspaces') {

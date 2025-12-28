@@ -20,6 +20,7 @@ let currentYear = new Date().getFullYear();
 let selectedDay = null;
 let calendarNotes = {};
 let guiones = [];
+let statistics = [];
 let editingGuionId = null;
 let workspaces = []; // Lista de calendarios disponibles
 
@@ -104,8 +105,50 @@ async function processLogin() {
         checkWorkspace();
     } catch (e) {
         console.error("Error en login:", e);
-        errorMsg.textContent = 'Error: ' + e.message + '. (Si estás en local, usa el link de Vercel)';
+
+        // Mostrar mensaje de error general
         errorMsg.style.display = 'block';
+        errorMsg.innerHTML = `Error: ${e.message}<br><small>(Si estás en local, usa el botón de abajo)</small>`;
+
+        // Botón explícito para activar modo local
+        // Mostramos el botón siempre que falle para facilitar pruebas
+        const btnLocal = document.createElement('button');
+        btnLocal.type = 'button'; // Evitar submit
+        btnLocal.className = 'btn-secondary';
+        btnLocal.style.marginTop = '15px';
+        btnLocal.style.width = '100%';
+        btnLocal.style.background = '#f59e0b';
+        btnLocal.style.color = '#fff';
+        btnLocal.style.border = 'none';
+        btnLocal.style.fontWeight = 'bold';
+        btnLocal.innerHTML = '🛠️ ACTIVAR MODO LOCAL';
+
+        btnLocal.onclick = async (evt) => {
+            evt.preventDefault();
+            if (!confirm('¿Activar modo local? Tus datos se guardarán solo en este navegador (temporalmente).')) return;
+
+            IS_LOCAL_MODE = true;
+            sessionStorage.setItem('IS_LOCAL_MODE', 'true');
+
+            // Usuario Mock
+            currentUser = {
+                email: 'admin@local.com',
+                name: 'Admin Local',
+                role: 'admin',
+                canAccess: ['personal', 'maacline']
+            };
+            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+            document.getElementById('loginScreen').classList.remove('active');
+            await loadWorkspaces();
+            checkWorkspace();
+        };
+
+        // Evitar duplicar botones si el usuario hace click varias veces
+        const existingBtn = errorMsg.querySelector('button');
+        if (existingBtn) existingBtn.remove();
+
+        errorMsg.appendChild(btnLocal);
     }
 }
 
@@ -198,6 +241,15 @@ function logout() {
 
 // Cargar workspaces desde la base de datos
 async function loadWorkspaces() {
+    if (IS_LOCAL_MODE) {
+        const saved = localStorage.getItem('local_workspaces');
+        workspaces = saved ? JSON.parse(saved) : [
+            { name: 'personal', display_name: 'Personal' },
+            { name: 'maacline', display_name: 'MAAC Line' }
+        ];
+        return;
+    }
+
     try {
         // Inicializar workspaces si no existen
         await fetch('/api/data?action=initWorkspaces', {
@@ -210,7 +262,6 @@ async function loadWorkspaces() {
             workspaces = await response.json();
         } else {
             console.error('Error al cargar workspaces');
-            // Fallback a workspaces por defecto
             workspaces = [
                 { name: 'personal', display_name: 'Personal' },
                 { name: 'maacline', display_name: 'MAAC Line' }
@@ -218,7 +269,6 @@ async function loadWorkspaces() {
         }
     } catch (e) {
         console.error('Error al cargar workspaces:', e);
-        // Fallback a workspaces por defecto
         workspaces = [
             { name: 'personal', display_name: 'Personal' },
             { name: 'maacline', display_name: 'MAAC Line' }
@@ -330,6 +380,13 @@ async function initializeApp() {
 
 // Cargar datos del servidor
 async function loadData() {
+    if (IS_LOCAL_MODE) {
+        calendarNotes = JSON.parse(localStorage.getItem(`local_notes_${currentWorkspace}`) || '{}');
+        guiones = JSON.parse(localStorage.getItem(`local_guiones_${currentWorkspace}`) || '[]');
+        statistics = JSON.parse(localStorage.getItem(`local_stats_${currentWorkspace}`) || '[]');
+        return;
+    }
+
     try {
         // Cargar Notas
         const notesRes = await fetch(`/api/data?action=getNotes&workspace=${currentWorkspace}`);
@@ -339,10 +396,19 @@ async function loadData() {
         const guionesRes = await fetch(`/api/data?action=getGuiones&workspace=${currentWorkspace}`);
         guiones = await guionesRes.json();
 
+        // Cargar Estadísticas
+        const statsRes = await fetch(`/api/data?action=getStatistics&workspace=${currentWorkspace}`);
+        if (statsRes.ok) {
+            statistics = await statsRes.json();
+        } else {
+            statistics = [];
+        }
+
     } catch (e) {
         console.error("Error al cargar datos de Neon DB:", e);
         calendarNotes = {};
         guiones = [];
+        statistics = [];
     }
 }
 
@@ -434,6 +500,11 @@ function initializeTabs() {
                 document.getElementById('filterMonth').value = currentMonth;
                 renderGuiones();
             }
+            // Si se abre la pestaña de estadísticas, renderizar
+            if (targetTab === 'estadisticas') {
+                document.getElementById('statsFilterMonth').value = currentMonth;
+                renderStatisticsUI();
+            }
         });
     });
 }
@@ -478,9 +549,14 @@ function initializeModals() {
 
     saveGuionBtn.addEventListener('click', saveGuion);
 
-    // Filtro de mes en guiones
+    // Filtros de guiones
     const filterMonth = document.getElementById('filterMonth');
-    filterMonth.addEventListener('change', renderGuiones);
+    const filterYear = document.getElementById('filterYear');
+    const filterPlatform = document.getElementById('filterPlatform');
+
+    if (filterMonth) filterMonth.addEventListener('change', renderGuiones);
+    if (filterYear) filterYear.addEventListener('change', renderGuiones);
+    if (filterPlatform) filterPlatform.addEventListener('change', renderGuiones);
 
     // Cerrar modal al hacer clic fuera
     dayModal.addEventListener('click', (e) => {
@@ -528,6 +604,31 @@ function initializeModals() {
             const formato = document.getElementById('guionFormato').value;
             addScriptRow(formato);
         });
+    }
+
+    // Modal de Estadísticas - Inicialización
+    const statsModal = document.getElementById('statsModal');
+    if (statsModal) {
+        const closeStatsBtns = statsModal.querySelectorAll('.modal-close-stats');
+        const saveStatsBtn = document.getElementById('saveStatsBtn');
+
+        closeStatsBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                closeModal('statsModal');
+            });
+        });
+
+        statsModal.addEventListener('click', (e) => {
+            if (e.target === statsModal) {
+                closeModal('statsModal');
+            }
+        });
+
+        if (saveStatsBtn) saveStatsBtn.addEventListener('click', saveStatistics);
+
+        // Filtro de estadísticas
+        const statsFilter = document.getElementById('statsFilterMonth');
+        if (statsFilter) statsFilter.addEventListener('change', renderStatisticsUI);
     }
 }
 
@@ -781,6 +882,28 @@ async function addNewNoteToDay(dateKey) {
 
     if (!text) return;
 
+    if (IS_LOCAL_MODE) {
+        if (!calendarNotes[dateKey]) calendarNotes[dateKey] = [];
+        calendarNotes[dateKey].push({
+            id: Date.now(),
+            text: text,
+            author: currentUser.name
+        });
+
+        let allNotes = JSON.parse(localStorage.getItem(`local_notes_${currentWorkspace}`) || '{}');
+        allNotes[dateKey] = calendarNotes[dateKey];
+        localStorage.setItem(`local_notes_${currentWorkspace}`, JSON.stringify(allNotes));
+
+        // Simular retardo de red
+        await new Promise(r => setTimeout(r, 200));
+
+        await loadData();
+        renderCalendar();
+        renderModalNotes(calendarNotes[dateKey] || []);
+        input.value = '';
+        return;
+    }
+
     try {
         const response = await fetch(`/api/data?action=saveNote&workspace=${currentWorkspace}`, {
             method: 'POST',
@@ -829,6 +952,8 @@ async function deleteSingleNote(noteId) {
 function renderGuiones() {
     const grid = document.getElementById('guionesGrid');
     const filterMonth = document.getElementById('filterMonth').value;
+    const filterYear = document.getElementById('filterYear').value;
+    const filterPlatform = document.getElementById('filterPlatform').value;
 
     // Controlar visibilidad del botón de agregar guión
     const addGuionBtn = document.getElementById('addGuionBtn');
@@ -839,14 +964,33 @@ function renderGuiones() {
     grid.innerHTML = '';
 
     // Filtrar guiones
-    let filteredGuiones = guiones;
-    if (filterMonth !== 'all') {
-        filteredGuiones = guiones.filter(guion => {
-            const [year, month, day] = guion.fecha.split('-');
+    let filteredGuiones = guiones.filter(guion => {
+        let matchesMonth = true;
+        let matchesYear = true;
+        let matchesPlatform = true;
+
+        const [year, month, day] = guion.fecha.split('-');
+
+        // Filtro Mes
+        if (filterMonth !== 'all') {
             const guionMonth = parseInt(month) - 1;
-            return guionMonth === parseInt(filterMonth);
-        });
-    }
+            if (guionMonth !== parseInt(filterMonth)) matchesMonth = false;
+        }
+
+        // Filtro Año
+        if (filterYear !== 'all') {
+            if (year !== filterYear) matchesYear = false;
+        }
+
+        // Filtro Plataforma
+        if (filterPlatform !== 'all') {
+            // guion.plataformas es array, guion.plataforma es string legacy
+            const gPlatforms = Array.isArray(guion.plataformas) ? guion.plataformas : (guion.plataforma ? [guion.plataforma] : []);
+            if (!gPlatforms.includes(filterPlatform)) matchesPlatform = false;
+        }
+
+        return matchesMonth && matchesYear && matchesPlatform;
+    });
 
     // Ordenar por fecha
     filteredGuiones.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
@@ -854,7 +998,7 @@ function renderGuiones() {
     if (filteredGuiones.length === 0) {
         grid.innerHTML = `
             <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
-                No hay guiones para mostrar. ${currentUser.role !== 'client' ? '¡Haz clic en "Nuevo Guión" para empezar!' : ''}
+                No hay guiones para mostrar con los filtros seleccionados. ${currentUser.role !== 'client' ? '¡Haz clic en "Nuevo Guión" para empezar!' : ''}
             </div>
             `;
         return;
@@ -976,7 +1120,7 @@ async function saveGuion() {
     }
 
     const guion = {
-        id: editingGuionId,
+        id: editingGuionId || Date.now(), // Generar ID si es nuevo (para local)
         fecha,
         titulo,
         contenido,
@@ -986,11 +1130,38 @@ async function saveGuion() {
         notas
     };
 
+    if (IS_LOCAL_MODE) {
+        let allGuiones = JSON.parse(localStorage.getItem(`local_guiones_${currentWorkspace}`) || '[]');
+
+        if (editingGuionId) {
+            const index = allGuiones.findIndex(g => g.id === editingGuionId);
+            if (index !== -1) allGuiones[index] = guion;
+        } else {
+            allGuiones.push(guion);
+        }
+
+        localStorage.setItem(`local_guiones_${currentWorkspace}`, JSON.stringify(allGuiones));
+
+        console.log('✅ [SAVE] Guión guardado LOCALMENTE');
+        await loadData();
+        renderCalendar();
+        renderGuiones();
+        closeModal('guionModal');
+        resetGuionForm();
+        return;
+    }
+
+    // Para backend real, el ID lo maneja la BD si es nuevo
+    const guionPayload = {
+        ...guion,
+        id: editingGuionId
+    };
+
     try {
         const response = await fetch(`/api/data?action=saveGuion&workspace=${currentWorkspace}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(guion)
+            body: JSON.stringify(guionPayload)
         });
 
         if (response.ok) {
@@ -1732,5 +1903,466 @@ function renderUserCalendarsCheckboxes() {
         label.appendChild(checkbox);
         label.appendChild(span);
         container.appendChild(label);
+    });
+}
+
+
+// ============================================
+// FUNCIONES DE ESTADÍSTICAS
+// ============================================
+
+let chartInstances = {}; // Para guardar referencias a los gráficos y poder destruirlos/actualizarlos
+
+// Variables globales para filtros de ESTADÍSTICAS
+let currentStatsFilterMonth = 'all';
+let currentStatsFilterYear = 'all';
+let currentStatsFilterFormat = 'all';
+let currentStatsFilterPlatform = 'all';
+
+function renderStatisticsUI() {
+    // Escuchar cambios en filtros
+    const monthSelect = document.getElementById('statsFilterMonth');
+    const yearSelect = document.getElementById('statsFilterYear');
+    const formatSelect = document.getElementById('statsFilterFormat');
+    const platformSelect = document.getElementById('statsFilterPlatform');
+
+    // Clonar para limpiar listeners anteriores
+    if (monthSelect) {
+        const newMonthSelect = monthSelect.cloneNode(true);
+        monthSelect.parentNode.replaceChild(newMonthSelect, monthSelect);
+        newMonthSelect.value = currentStatsFilterMonth;
+        newMonthSelect.addEventListener('change', (e) => { currentStatsFilterMonth = e.target.value; updateAll(); });
+    }
+
+    if (yearSelect) {
+        const newYearSelect = yearSelect.cloneNode(true);
+        yearSelect.parentNode.replaceChild(newYearSelect, yearSelect);
+        newYearSelect.value = currentStatsFilterYear;
+        newYearSelect.addEventListener('change', (e) => { currentStatsFilterYear = e.target.value; updateAll(); });
+    }
+
+    if (formatSelect) {
+        const newFormatSelect = formatSelect.cloneNode(true);
+        formatSelect.parentNode.replaceChild(newFormatSelect, formatSelect);
+        newFormatSelect.value = currentStatsFilterFormat;
+        newFormatSelect.addEventListener('change', (e) => { currentStatsFilterFormat = e.target.value; updateAll(); });
+    }
+
+    if (platformSelect) {
+        const newPlatformSelect = platformSelect.cloneNode(true);
+        platformSelect.parentNode.replaceChild(newPlatformSelect, platformSelect);
+        newPlatformSelect.value = currentStatsFilterPlatform;
+        newPlatformSelect.addEventListener('change', (e) => { currentStatsFilterPlatform = e.target.value; updateAll(); });
+    }
+
+    // Función auxiliar para actualizar todo
+    const updateAll = () => {
+        renderStatsEntryList();
+        renderStatsCharts();
+        renderStatsSummary();
+    };
+
+    updateAll();
+}
+
+function renderStatsEntryList() {
+    const grid = document.getElementById('statsEntryGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const filteredGuiones = guiones.filter(g => {
+        // Solo publicados
+        if (g.estado !== 'Publicado') return false;
+
+        let gDate;
+        try { gDate = new Date(g.fecha + 'T12:00:00'); } catch (e) { return false; }
+
+        // Filtro Mes
+        if (currentStatsFilterMonth !== 'all') {
+            if (gDate.getMonth() !== parseInt(currentStatsFilterMonth)) return false;
+        }
+
+        // Filtro Año
+        if (currentStatsFilterYear !== 'all') {
+            if (gDate.getFullYear() !== parseInt(currentStatsFilterYear)) return false;
+        }
+
+        // Filtro Formato
+        if (currentStatsFilterFormat !== 'all') {
+            const formato = g.formato || 'Carrusel';
+            if (formato !== currentStatsFilterFormat) return false;
+        }
+
+        // Filtro Plataforma
+        if (currentStatsFilterPlatform !== 'all') {
+            if (!g.plataformas.includes(currentStatsFilterPlatform)) return false;
+        }
+
+        return true;
+    });
+
+    if (filteredGuiones.length === 0) {
+        grid.innerHTML = '<p class="no-data" style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No hay guiones publicados para mostrar con estos filtros.</p>';
+        return;
+    }
+
+    filteredGuiones.forEach(g => {
+        const card = document.createElement('div');
+        card.className = 'guion-card';
+        card.style.borderColor = 'var(--primary)'; // Validar visualmente que son interactivos
+        card.style.cursor = 'default';
+
+        // Ver si ya tiene stats
+        const hasStats = statistics.some(s => s.guion_id === g.id);
+        const statusBadge = hasStats
+            ? '<span class="status-badge status-published" style="font-size: 0.7rem; padding: 2px 6px;">Con Datos</span>'
+            : '<span class="status-badge status-idea" style="background: var(--bg-tertiary); color: var(--text-secondary); font-size: 0.7rem; padding: 2px 6px;">Sin Datos</span>';
+
+        card.innerHTML = `
+            <div class="guion-card-header">
+                <span class="guion-date">${g.fecha}</span>
+                ${statusBadge}
+            </div>
+            <h3 class="guion-title">${g.titulo}</h3>
+            <div class="guion-meta">
+                <span class="guion-format format-${(g.formato || 'Carrusel').toLowerCase()}">${g.formato || 'Carrusel'}</span>
+                <div class="guion-platforms">
+                    ${g.plataformas.map(p => `<span class="platform-tag">${p}</span>`).join('')}
+                </div>
+            </div>
+            <button class="btn-secondary" style="width: 100%; margin-top: 10px;" onclick="openStatsModal(${g.id})">
+                Ingresar/Editar Datos
+            </button>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+// Nueva función para el resumen con filtros y SVG
+function renderStatsSummary() {
+    const summaryContainer = document.getElementById('statsSummary');
+    if (!summaryContainer) return;
+    summaryContainer.innerHTML = '';
+
+    // 1. Obtener IDs de guiones válidos según filtros de fecha/formato/plataforma
+    const validGuionIds = guiones.filter(g => {
+        if (g.estado !== 'Publicado') return false;
+
+        let gDate;
+        try { gDate = new Date(g.fecha + 'T12:00:00'); } catch (e) { return false; }
+
+        if (currentStatsFilterMonth !== 'all' && gDate.getMonth() !== parseInt(currentStatsFilterMonth)) return false;
+        if (currentStatsFilterYear !== 'all' && gDate.getFullYear() !== parseInt(currentStatsFilterYear)) return false;
+        if (currentStatsFilterFormat !== 'all' && (g.formato || 'Carrusel') !== currentStatsFilterFormat) return false;
+        if (currentStatsFilterPlatform !== 'all' && !g.plataformas.includes(currentStatsFilterPlatform)) return false;
+
+        return true;
+    }).map(g => g.id);
+
+    // 2. Filtrar estadisticas de esos guiones
+    let filteredStats = statistics.filter(s => validGuionIds.includes(s.guion_id));
+
+    // 3. Si hay filtro de plataforma seleccionado (ej: TikTok), solo sumar stats de esa plataforma
+    if (currentStatsFilterPlatform !== 'all') {
+        filteredStats = filteredStats.filter(s => s.platform === currentStatsFilterPlatform);
+    }
+
+    if (filteredStats.length === 0) return;
+
+    // Calcular Totales
+    const totalViews = filteredStats.reduce((sum, s) => sum + (s.metrics.views || 0), 0);
+    const totalLikes = filteredStats.reduce((sum, s) => sum + (s.metrics.likes || 0), 0);
+    const totalComments = filteredStats.reduce((sum, s) => sum + (s.metrics.comments || 0), 0);
+
+    // Avg Engagement
+    const avgEngagement = (filteredStats.reduce((sum, s) => sum + parseFloat(s.metrics.engagement_rate || 0), 0) / (filteredStats.length || 1)).toFixed(2);
+
+    // Iconos SVG
+    const iconViews = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+    const iconLikes = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`;
+    const iconComments = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>`;
+    const iconEng = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>`;
+
+    // Renderizar Cards
+    const metrics = [
+        { label: 'Vistas Totales', value: totalViews.toLocaleString(), icon: iconViews, color: '#3b82f6' },
+        { label: 'Likes Totales', value: totalLikes.toLocaleString(), icon: iconLikes, color: '#ec4899' },
+        { label: 'Comentarios', value: totalComments.toLocaleString(), icon: iconComments, color: '#8b5cf6' },
+        { label: 'Engagement Prom.', value: avgEngagement + '%', icon: iconEng, color: '#10b981' }
+    ];
+
+    metrics.forEach(m => {
+        const card = document.createElement('div');
+        card.style.background = 'var(--bg-secondary)';
+        card.style.padding = '15px';
+        card.style.borderRadius = '12px';
+        card.style.border = '1px solid var(--border-color)';
+        card.style.display = 'flex';
+        card.style.alignItems = 'center';
+        card.style.gap = '12px';
+
+        card.innerHTML = `
+            <div style="background: ${m.color}20; padding: 10px; border-radius: 10px; color: ${m.color}; display: flex; align-items: center; justify-content: center;">${m.icon}</div>
+            <div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">${m.label}</div>
+                <div style="font-size: 1.25rem; font-weight: bold; color: var(--text-primary);">${m.value}</div>
+            </div>
+        `;
+        summaryContainer.appendChild(card);
+    });
+}
+
+function openStatsModal(guionId) {
+    const guion = guiones.find(g => g.id === guionId);
+    if (!guion) return;
+
+    document.getElementById('statsModalTitle').textContent = `Estadísticas: ${guion.titulo}`;
+    document.getElementById('saveStatsBtn').dataset.guionId = guionId;
+
+    const container = document.getElementById('statsFormsContainer');
+    container.innerHTML = '';
+
+    const format = guion.formato || 'Carrusel';
+
+    guion.plataformas.forEach(platform => {
+        const stat = statistics.find(s => s.guion_id === guionId && s.platform === platform);
+        const metrics = stat ? stat.metrics : {};
+
+        const platformSection = document.createElement('div');
+        platformSection.className = 'stats-platform-section';
+        platformSection.style.marginBottom = '20px';
+        platformSection.style.padding = '15px';
+        platformSection.style.border = '1px solid var(--border-color)';
+        platformSection.style.borderRadius = '8px';
+
+        let fieldsHTML = '';
+
+        // Helper para crear inputs
+        const createInput = (label, key, value) => `
+            <div class="form-group">
+                <label>${label}</label>
+                <input type="number" class="stat-input" data-key="${key}" value="${value || 0}">
+            </div>
+        `;
+
+        // Lógica de campos según Formato (User Request)
+        if (format === 'Historia') {
+            // Historia: Visualizaciones, Reacciones, Mensajes Directos
+            fieldsHTML = `
+                <div class="form-row">
+                    ${createInput('Visualizaciones', 'views', metrics.views)}
+                    ${createInput('Reacciones (Likes)', 'likes', metrics.likes)}
+                </div>
+                <div class="form-row">
+                    ${createInput('Mensajes Directos', 'messages', metrics.messages)}
+                </div>
+            `;
+        } else if (format === 'Carrusel') {
+            // Carrusel: No tiempo promedio, no mensajes, no ventas
+            fieldsHTML = `
+                <div class="form-row">
+                    ${createInput('Seguidores Obtenidos', 'followers', metrics.followers)}
+                    ${createInput('Visualizaciones', 'views', metrics.views)}
+                </div>
+                <div class="form-row">
+                    ${createInput('Likes', 'likes', metrics.likes)}
+                    ${createInput('Comentarios', 'comments', metrics.comments)}
+                </div>
+                <div class="form-row">
+                    ${createInput('Compartidos', 'shares', metrics.shares)}
+                    ${createInput('Guardados', 'saves', metrics.saves)}
+                </div>
+            `;
+        } else if (format === 'Reel') {
+            // Reel: Todo lo standard + Tiempo Total antes de Tiempo Promedio. No mensajes, no ventas.
+            fieldsHTML = `
+                <div class="form-row">
+                    ${createInput('Seguidores Obtenidos', 'followers', metrics.followers)}
+                    ${createInput('Visualizaciones', 'views', metrics.views)}
+                </div>
+                <div class="form-row">
+                    ${createInput('Likes', 'likes', metrics.likes)}
+                    ${createInput('Comentarios', 'comments', metrics.comments)}
+                </div>
+                <div class="form-row">
+                    ${createInput('Compartidos', 'shares', metrics.shares)}
+                    ${createInput('Guardados', 'saves', metrics.saves)}
+                </div>
+                <div class="form-row">
+                    ${createInput('Tiempo Total Visualización (min/hr)', 'total_watch_time', metrics.total_watch_time)}
+                    ${createInput('Tiempo Promedio Visualización (seg)', 'avg_watch_time', metrics.avg_watch_time)}
+                </div>
+            `;
+        } else {
+            // Fallback genérico
+            fieldsHTML = `
+                 <div class="form-row">
+                    ${createInput('Vistas/Impresiones', 'views', metrics.views)}
+                    ${createInput('Interacciones', 'interactions', metrics.interactions || (metrics.likes || 0))}
+                </div>
+             `;
+        }
+
+        platformSection.innerHTML = `<h4 style="margin-bottom: 15px; color: var(--primary); text-transform: uppercase; font-size: 0.9rem;">${platform} <small style="color:var(--text-secondary); text-transform:none;">(${format})</small></h4><div class="platform-inputs" data-platform="${platform}">${fieldsHTML}</div>`;
+        container.appendChild(platformSection);
+    });
+
+    openModal('statsModal');
+}
+
+async function saveStatistics() {
+    const btn = document.getElementById('saveStatsBtn');
+    const guionId = parseInt(btn.dataset.guionId);
+    const container = document.getElementById('statsFormsContainer');
+    const sections = container.querySelectorAll('.platform-inputs');
+
+    btn.textContent = 'Guardando...';
+    btn.disabled = true;
+
+    try {
+        const newStats = [];
+        for (const section of sections) {
+            const platform = section.dataset.platform;
+            const inputs = section.querySelectorAll('.stat-input');
+            const metrics = {};
+            inputs.forEach(input => {
+                metrics[input.dataset.key] = parseFloat(input.value) || 0;
+            });
+
+            if (metrics.views > 0) {
+                let interactions = (metrics.likes || 0) + (metrics.comments || 0) + (metrics.shares || 0) + (metrics.saves || 0);
+                if (metrics.interactions) interactions = metrics.interactions;
+                metrics.engagement_rate = ((interactions / metrics.views) * 100).toFixed(2);
+            } else {
+                metrics.engagement_rate = 0;
+            }
+
+            if (IS_LOCAL_MODE) {
+                newStats.push({ guion_id: guionId, platform: platform, metrics: metrics });
+            } else {
+                await fetch(`/api/data?action=saveStatistic&workspace=${currentWorkspace}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ guionId: guionId, platform: platform, metrics: metrics })
+                });
+            }
+        }
+
+        if (IS_LOCAL_MODE) {
+            statistics = statistics.filter(s => s.guion_id !== guionId);
+            statistics = [...statistics, ...newStats];
+            localStorage.setItem(`local_stats_${currentWorkspace}`, JSON.stringify(statistics));
+            await new Promise(r => setTimeout(r, 200));
+            renderStatisticsUI();
+            closeModal('statsModal');
+            alert('Estadísticas guardadas LOCALMENTE');
+        } else {
+            const statsRes = await fetch(`/api/data?action=getStatistics&workspace=${currentWorkspace}`);
+            if (statsRes.ok) {
+                statistics = await statsRes.json();
+                renderStatisticsUI();
+                closeModal('statsModal');
+                alert('Estadísticas guardadas correctamente');
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Error al guardar estadísticas');
+    } finally {
+        btn.textContent = 'Guardar Estadísticas';
+        btn.disabled = false;
+    }
+}
+
+function renderStatsCharts() {
+    const chartsGrid = document.getElementById('statsChartsGrid');
+    if (!chartsGrid) return;
+    chartsGrid.innerHTML = '';
+
+    const activePlatforms = [...new Set(statistics.map(s => s.platform))];
+    if (activePlatforms.length === 0) return;
+
+    Object.values(chartInstances).forEach(chart => chart.destroy());
+    chartInstances = {};
+
+    activePlatforms.forEach(platform => {
+        if (currentStatsFilterPlatform !== 'all' && platform !== currentStatsFilterPlatform) return;
+
+        const platformStats = statistics.filter(s => {
+            if (s.platform !== platform) return false;
+            const guion = guiones.find(g => g.id === s.guion_id);
+            if (!guion) return false;
+            if (guion.estado !== 'Publicado') return false;
+
+            let gDate;
+            try { gDate = new Date(guion.fecha + 'T12:00:00'); } catch (e) { return false; }
+
+            if (currentStatsFilterMonth !== 'all' && gDate.getMonth() !== parseInt(currentStatsFilterMonth)) return false;
+            if (currentStatsFilterYear !== 'all' && gDate.getFullYear() !== parseInt(currentStatsFilterYear)) return false;
+            if (currentStatsFilterFormat !== 'all' && (guion.formato || 'Carrusel') !== currentStatsFilterFormat) return false;
+
+            return true;
+        });
+
+        if (platformStats.length === 0) return;
+
+        const chartCard = document.createElement('div');
+        chartCard.className = 'chart-card';
+        chartCard.style.background = 'var(--bg-secondary)';
+        chartCard.style.padding = '20px';
+        chartCard.style.borderRadius = '12px';
+        chartCard.style.border = '1px solid var(--border-color)';
+
+        const totalViews = platformStats.reduce((sum, s) => sum + (s.metrics.views || 0), 0);
+        const avgEngagement = (platformStats.reduce((sum, s) => sum + parseFloat(s.metrics.engagement_rate || 0), 0) / (platformStats.length || 1)).toFixed(2);
+
+        chartCard.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">${platform}</h3>
+                <div style="text-align: right; font-size: 0.8rem; color: var(--text-secondary);">
+                    <div>Total Vistas: <strong>${totalViews.toLocaleString()}</strong></div>
+                    <div>Avg Engagement: <strong>${avgEngagement}%</strong></div>
+                </div>
+            </div>
+            <canvas id="chart-${platform}"></canvas>
+        `;
+        chartsGrid.appendChild(chartCard);
+
+        const ctx = chartCard.querySelector('canvas').getContext('2d');
+        const labels = [];
+        const dataViews = [];
+        const dataEngagement = [];
+
+        platformStats.forEach(stat => {
+            const guion = guiones.find(g => g.id === stat.guion_id);
+            if (guion) {
+                let label = guion.titulo;
+                if (label.length > 15) label = label.substring(0, 15) + '...';
+                labels.push(label);
+                dataViews.push(stat.metrics.views || 0);
+                dataEngagement.push(stat.metrics.engagement_rate || 0);
+            }
+        });
+
+        chartInstances[platform] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Vistas', data: dataViews, backgroundColor: 'rgba(54, 162, 235, 0.5)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1, yAxisID: 'y' },
+                    { label: 'Engagement (%)', data: dataEngagement, type: 'line', borderColor: 'rgba(255, 99, 132, 1)', borderWidth: 2, tension: 0.1, yAxisID: 'y1' }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    y: { type: 'linear', display: true, position: 'left', beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#94a3b8' } },
+                    y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, beginAtZero: true, suggestedMax: 10, ticks: { color: '#94a3b8' } },
+                    x: { grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#94a3b8' } }
+                },
+                plugins: { legend: { labels: { color: '#e2e8f0' } } }
+            }
+        });
     });
 }
