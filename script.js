@@ -319,15 +319,20 @@ function showWorkspaceSelector() {
         button.onclick = () => selectWorkspace(ws.name);
 
         // Icono (usar diferentes iconos según el workspace)
-        const icon = ws.name === 'personal'
-            ? `<svg class="workspace-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        let icon;
+        if (ws.logo) {
+            icon = `<img src="${ws.logo}" alt="${ws.display_name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin-bottom: 15px;">`;
+        } else {
+            icon = ws.name === 'personal'
+                ? `<svg class="workspace-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
                </svg>`
-            : `<svg class="workspace-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                : `<svg class="workspace-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
                 <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
                </svg>`;
+        }
 
         button.innerHTML = `
             ${icon}
@@ -1636,10 +1641,23 @@ function initializeUserModals() {
     // Botón agregar usuario
     document.getElementById('addUserBtn').addEventListener('click', () => {
         document.getElementById('userModalTitle').textContent = 'Nuevo Usuario';
-        document.getElementById('newUserEmail').value = '';
+        const emailInput = document.getElementById('newUserEmail');
+        emailInput.value = '';
+        emailInput.disabled = false;
+
         document.getElementById('newUserPassword').value = '';
         document.getElementById('newUserName').value = '';
         document.getElementById('newUserRole').value = 'client';
+
+        // Reset button state
+        const saveBtn = document.getElementById('saveUserBtn');
+        saveBtn.textContent = 'Guardar Usuario';
+
+        // Restore original listener
+        const newBtn = saveBtn.cloneNode(true);
+        saveBtn.parentNode.replaceChild(newBtn, saveBtn);
+        newBtn.addEventListener('click', saveNewUser);
+
         renderUserCalendarsCheckboxes();
         openModal('addUserModal');
     });
@@ -1873,7 +1891,7 @@ function renderWorkspacesList() {
                     ${isDefault ? '<div style="font-size: 0.85rem; color: var(--primary-light);">Calendario predeterminado</div>' : ''}
                 </div>
                  <div style="display: flex; gap: 8px;">
-                    <button onclick="editWorkspace('${ws.name}', '${ws.display_name}')" class="btn-icon btn-edit" title="Editar">
+                    <button onclick="editWorkspace('${ws.name}', '${ws.display_name}', '${ws.logo || ''}')" class="btn-icon btn-edit" title="Editar">
                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                     </button>
                     ${deleteButton}
@@ -1886,14 +1904,26 @@ function renderWorkspacesList() {
     workspacesList.innerHTML = html;
 }
 
+// Helper para leer archivo como Base64
+const readFileAsBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+    });
+};
+
 // Editar workspace
-window.editWorkspace = function (name, displayName) {
+window.editWorkspace = function (name, displayName, currentLogo = '') {
     const modal = document.getElementById('addWorkspaceModal');
     document.getElementById('modalTitleWorkspace').textContent = 'Editar Calendario';
 
     document.getElementById('newWorkspaceName').value = name;
     document.getElementById('newWorkspaceName').disabled = true; // ID no editable
     document.getElementById('newWorkspaceDisplayName').value = displayName;
+    // Clear file input
+    document.getElementById('newWorkspaceLogo').value = '';
 
     // Cambiar comportamiento del botón guardar
     const saveBtn = document.getElementById('saveWorkspaceBtn');
@@ -1905,13 +1935,26 @@ window.editWorkspace = function (name, displayName) {
 
     newBtn.addEventListener('click', async () => {
         const newDisplayName = document.getElementById('newWorkspaceDisplayName').value.trim();
+        const fileInput = document.getElementById('newWorkspaceLogo');
+        let logoToSave = currentLogo; // Mantener anterior por defecto
+
+        if (fileInput.files.length > 0) {
+            try {
+                logoToSave = await readFileAsBase64(fileInput.files[0]);
+            } catch (e) {
+                console.error('Error leyendo imagen', e);
+                alert('Error al procesar la imagen');
+                return;
+            }
+        }
+
         if (!newDisplayName) return alert('Nombre requerido');
 
         try {
             await fetch('/api/data?action=updateWorkspace', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, display_name: newDisplayName })
+                body: JSON.stringify({ name, display_name: newDisplayName, logo: logoToSave })
             });
 
             // Recargar
@@ -1923,8 +1966,11 @@ window.editWorkspace = function (name, displayName) {
             // Restaurar estado del modal
             document.getElementById('modalTitleWorkspace').textContent = 'Nuevo Calendario';
             document.getElementById('newWorkspaceName').disabled = false;
+            document.getElementById('newWorkspaceName').value = '';
+            document.getElementById('newWorkspaceDisplayName').value = '';
+            document.getElementById('newWorkspaceLogo').value = '';
+
             newBtn.textContent = 'Crear';
-            // Restaurar listener original (createNewWorkspace) - requiere recargar página o reasignar
             newBtn.addEventListener('click', createNewWorkspace);
 
         } catch (e) {
@@ -1940,6 +1986,9 @@ window.editWorkspace = function (name, displayName) {
 async function createNewWorkspace() {
     const name = document.getElementById('newWorkspaceName').value.trim();
     const displayName = document.getElementById('newWorkspaceDisplayName').value.trim();
+    const fileInput = document.getElementById('newWorkspaceLogo');
+
+    let logoBase64 = '';
 
     if (!name || !displayName) {
         alert('Por favor completa todos los campos');
@@ -1952,11 +2001,21 @@ async function createNewWorkspace() {
         return;
     }
 
+    if (fileInput.files.length > 0) {
+        try {
+            logoBase64 = await readFileAsBase64(fileInput.files[0]);
+        } catch (e) {
+            console.error('Error leyendo imagen', e);
+            alert('Error al procesar la imagen');
+            return;
+        }
+    }
+
     try {
         const response = await fetch('/api/data?action=createWorkspace', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, display_name: displayName })
+            body: JSON.stringify({ name, display_name: displayName, logo: logoBase64 })
         });
 
         if (response.ok) {
@@ -2424,13 +2483,50 @@ function openStatsModal(guionId) {
 
         let fieldsHTML = '';
 
-        // Helper para crear inputs
+        // Helper to format seconds to HH:MM:SS
+        function formatSecondsToHMS(seconds) {
+            if (!seconds) return '';
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            // return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            // Show hours only if needed, or always? User said HH:MM:SS.
+            return [h, m, s].map(v => v.toString().padStart(2, '0')).join(':');
+        }
+
+        // Helper to parse HH:MM:SS to seconds
+        function parseHMSToSeconds(hmsString) {
+            if (!hmsString) return 0;
+            const parts = hmsString.split(':').map(Number);
+            if (parts.length === 3) {
+                return parts[0] * 3600 + parts[1] * 60 + parts[2];
+            } else if (parts.length === 2) {
+                return parts[0] * 60 + parts[1];
+            } else if (parts.length === 1) {
+                return parts[0];
+            }
+            return 0;
+        }
+
+        // ... existing code ...
+
+        // Helper para crear inputs (general)
         const createInput = (label, key, value) => `
             <div class="form-group">
                 <label>${label}</label>
                 <input type="number" class="stat-input" data-key="${key}" value="${value || 0}">
             </div>
         `;
+
+        // Helper specific for Time (HMS)
+        const createTimeInput = (label, key, value) => `
+            <div class="form-group">
+                <label>${label}</label>
+                <input type="text" class="stat-input" data-key="${key}" value="${formatSecondsToHMS(value)}" placeholder="HH:MM:SS" style="font-family: monospace;">
+            </div>
+        `;
+
+        // ... inside the loop ...
 
         // Lógica de campos según Formato (User Request)
         if (format === 'Historia') {
@@ -2461,7 +2557,6 @@ function openStatsModal(guionId) {
                 </div>
         `;
         } else if (format === 'Reel') {
-            // Reel: Todo lo standard + Tiempo Total antes de Tiempo Promedio. No mensajes, no ventas.
             fieldsHTML = `
             <div class="form-row">
                 ${createInput('Seguidores Obtenidos', 'followers', metrics.followers)}
@@ -2480,7 +2575,7 @@ function openStatsModal(guionId) {
                     ${createInput('Tiempo Promedio Visualización (seg)', 'avg_watch_time', metrics.avg_watch_time)}
                 </div>
                 <div class="form-row">
-                    ${createInput('Tiempo Total Reproducción (seg)', 'total_playback_time', metrics.total_playback_time)}
+                    ${createTimeInput('Tiempo Total Reproducción (HH:MM:SS)', 'total_playback_time', metrics.total_playback_time)}
                 </div>
         `;
         } else {
@@ -2516,7 +2611,13 @@ async function saveStatistics() {
             const inputs = section.querySelectorAll('.stat-input');
             const metrics = {};
             inputs.forEach(input => {
-                metrics[input.dataset.key] = parseFloat(input.value) || 0;
+                const key = input.dataset.key;
+                if (key === 'total_playback_time') {
+                    const val = input.value;
+                    metrics[key] = val.includes(':') ? parseHMSToSeconds(val) : (parseFloat(val) || 0);
+                } else {
+                    metrics[key] = parseFloat(input.value) || 0;
+                }
             });
 
             if (metrics.views > 0) {
@@ -2594,6 +2695,7 @@ function renderStatsCharts() {
         if (currentStatsFilterMonth !== 'all' && gDate.getMonth() !== parseInt(currentStatsFilterMonth)) return false;
         if (currentStatsFilterYear !== 'all' && gDate.getFullYear() !== parseInt(currentStatsFilterYear)) return false;
         if (currentStatsFilterFormat !== 'all' && (guion.formato || 'Carrusel') !== currentStatsFilterFormat) return false;
+        if (currentStatsFilterPlatform !== 'all' && s.platform !== currentStatsFilterPlatform) return false;
 
         return true;
     });
@@ -2811,7 +2913,7 @@ function renderStatsCharts() {
     const followersCard = document.createElement('div');
     followersCard.className = 'chart-card';
     followersCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
-    followersCard.innerHTML = `< h3 style = "margin-bottom: 15px;" > Crecimiento Acumulativo de Seguidores</h3 > `;
+    followersCard.innerHTML = `<h3 style="margin-bottom: 15px;">Crecimiento Acumulativo de Seguidores</h3>`;
 
     const followersContainer = document.createElement('div');
     followersContainer.style.position = 'relative';
@@ -3023,7 +3125,11 @@ function renderStatsCharts() {
                     tooltip: {
                         callbacks: {
                             label: function (context) {
-                                return `${context.dataset.label}: ${context.parsed.y} s`;
+                                const seconds = context.parsed.y;
+                                const label = context.dataset.label;
+                                // Format as HH:MM:SS for all time metrics or just Total?
+                                // User asked "que asi se vea en la grafica".
+                                return `${label}: ${formatSecondsToHMS(seconds)} (${seconds}s)`;
                             }
                         }
                     }

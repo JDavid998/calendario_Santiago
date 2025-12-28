@@ -166,6 +166,11 @@ export default async function handler(req, res) {
                 ON CONFLICT (name) DO NOTHING
             `;
 
+            // Asegurar que exista la columna logo
+            await sql`
+                ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS logo TEXT;
+            `;
+
 
             await sql`
                 CREATE TABLE IF NOT EXISTS statistics (
@@ -211,11 +216,27 @@ export default async function handler(req, res) {
             const normalizedName = name.toLowerCase().replace(/\s+/g, '_');
 
             await sql`
-                INSERT INTO workspaces (name, display_name)
-                VALUES (${normalizedName}, ${display_name})
+                INSERT INTO workspaces (name, display_name, logo)
+                VALUES (${normalizedName}, ${display_name}, ${req.body.logo || null})
             `;
 
             return res.status(200).json({ success: true, name: normalizedName });
+        }
+
+        if (action === 'updateWorkspace' && req.method === 'PUT') {
+            const { name, display_name, logo } = req.body;
+
+            if (!name || !display_name) {
+                return res.status(400).json({ error: 'Nombre y nombre de visualización son requeridos' });
+            }
+
+            await sql`
+                UPDATE workspaces 
+                SET display_name = ${display_name}, logo = ${logo}
+                WHERE name = ${name}
+            `;
+
+            return res.status(200).json({ success: true });
         }
 
         if (action === 'deleteWorkspace' && req.method === 'DELETE') {
