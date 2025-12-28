@@ -2309,6 +2309,9 @@ function renderStatsEntryList() {
         return true;
     });
 
+    // Ordenar por fecha cronológicamente
+    filteredGuiones.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
     if (filteredGuiones.length === 0) {
         grid.innerHTML = '<p class="no-data" style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No hay guiones publicados para mostrar con estos filtros.</p>';
         return;
@@ -3048,6 +3051,13 @@ function renderStatsCharts() {
         return guion && guion.formato === 'Reel' && (s.metrics.total_duration > 0 || s.metrics.avg_watch_time > 0);
     });
 
+    // Ordenar cronológicamente
+    reelRetentionStats.sort((a, b) => {
+        const gA = guiones.find(g => g.id === a.guion_id);
+        const gB = guiones.find(g => g.id === b.guion_id);
+        return new Date(gA.fecha) - new Date(gB.fecha);
+    });
+
     if (reelRetentionStats.length > 0) {
         // PRIMERA GRÁFICA: Duración y Retención
         const durationCanvas = document.createElement('canvas');
@@ -3149,6 +3159,13 @@ function renderStatsCharts() {
     const reelPlaybackStats = filteredStats.filter(s => {
         const guion = guiones.find(g => g.id === s.guion_id);
         return guion && guion.formato === 'Reel' && (s.metrics.total_playback_time > 0);
+    });
+
+    // Ordenar cronológicamente
+    reelPlaybackStats.sort((a, b) => {
+        const gA = guiones.find(g => g.id === a.guion_id);
+        const gB = guiones.find(g => g.id === b.guion_id);
+        return new Date(gA.fecha) - new Date(gB.fecha);
     });
 
     if (reelPlaybackStats.length > 0) {

@@ -47,6 +47,30 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true });
         }
 
+        if (action === 'updateUser' && req.method === 'PUT') {
+            const { email, password, role, name, canAccess } = req.body;
+            // Si password viene vacío o undefined, no lo actualizamos (la consulta debe ser dinámica o condicional)
+            // Pero Neon/Postgres SQL template tag complexity...
+            // Simplificación: asumo que el frontend envía password si cambia, o mantenemos la logica de upsert completa si el update es total.
+            // El frontend envía: email, name, role, canAccess, password (opcional)
+
+            if (password) {
+                await sql`
+                    UPDATE users 
+                    SET password = ${password}, role = ${role}, name = ${name}, can_access = ${canAccess}
+                    WHERE email = ${email}
+                `;
+            } else {
+                await sql`
+                    UPDATE users 
+                    SET role = ${role}, name = ${name}, can_access = ${canAccess}
+                    WHERE email = ${email}
+                `;
+            }
+
+            return res.status(200).json({ success: true });
+        }
+
         if (action === 'deleteUser' && req.method === 'DELETE') {
             const { targetEmail } = req.query;
             await sql`DELETE FROM users WHERE email = ${targetEmail}`;
