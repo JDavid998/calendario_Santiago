@@ -68,7 +68,7 @@ export default async function handler(req, res) {
             });
             return res.status(200).json(formatted);
         }
-
+        // --- NOTAS ---
         if (action === 'saveNote' && req.method === 'POST') {
             const { dateKey, text, author } = req.body;
             await sql`
@@ -122,7 +122,7 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true });
         }
 
-        // --- ESTADÍSTICAS ---
+        // ---- ESTADÍSTICAS ------------
         if (action === 'getStatistics') {
             const { month, year } = req.query;
 
