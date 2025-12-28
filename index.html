@@ -105,8 +105,24 @@
                             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                         </svg>
                     </button>
-                    <button onclick="showWorkspaceManagement()" class="btn-icon-header" title="Gestionar calendarios"
-                        id="btnWorkspaceManagement" style="display: none;">
+                    <button onclick="(function(){ 
+                        console.log('🚀 NUCLEAR: Botón clickeado'); 
+                        const modal = document.getElementById('workspaceManagementModal'); 
+                        if(modal) { 
+                            modal.style.display = 'flex'; 
+                            modal.classList.add('active'); 
+                            console.log('✅ NUCLEAR: Modal abierto'); 
+                            if(typeof renderWorkspacesList === 'function') renderWorkspacesList(); 
+                            if(typeof initializeWorkspaceModals === 'function' && !window.workspaceModalsInitialized) { 
+                                initializeWorkspaceModals(); 
+                                window.workspaceModalsInitialized = true; 
+                            }
+                        } else { 
+                            console.error('❌ NUCLEAR: Modal no encontrado'); 
+                            alert('Error: Modal no encontrado'); 
+                        } 
+                    })()" class="btn-icon-header" title="Gestionar calendarios" id="btnWorkspaceManagement"
+                        style="display: none;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2">
                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
