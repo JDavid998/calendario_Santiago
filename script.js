@@ -2194,7 +2194,7 @@ function openStatsModal(guionId) {
                     ${createInput('Guardados', 'saves', metrics.saves)}
                 </div>
                 <div class="form-row">
-                    ${createInput('Tiempo Total Visualización (min/hr)', 'total_watch_time', metrics.total_watch_time)}
+                     ${createInput('Tiempo Total Video (seg)', 'total_duration', metrics.total_duration)}
                     ${createInput('Tiempo Promedio Visualización (seg)', 'avg_watch_time', metrics.avg_watch_time)}
                 </div>
             `;
