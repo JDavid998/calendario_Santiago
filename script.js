@@ -2366,16 +2366,20 @@ function renderStatsSummary() {
         return true;
     }).map(g => g.id);
 
-    // 2. Filtrar estadisticas de esos guiones
-    let filteredStats = statistics.filter(s => validGuionIds.includes(s.guion_id));
 
-    // 3. Si hay filtro de plataforma seleccionado (ej: TikTok), solo sumar stats de esa plataforma
-    if (currentStatsFilterPlatform !== 'all') {
-        filteredStats = filteredStats.filter(s => s.platform === currentStatsFilterPlatform);
-    }
+    // 2. Filtrar estadisticas de esos guiones con validación estricta
+    let filteredStats = statistics.filter(s => {
+        // Debe estar en los guiones válidos
+        if (!validGuionIds.includes(s.guion_id)) return false;
 
-    // 4. Filtrar solo estadísticas con datos significativos
-    filteredStats = filteredStats.filter(s => hasSignificantData(s.metrics));
+        // Debe tener datos significativos
+        if (!hasSignificantData(s.metrics)) return false;
+
+        // Si hay filtro de plataforma, debe coincidir EXACTAMENTE
+        if (currentStatsFilterPlatform !== 'all' && s.platform !== currentStatsFilterPlatform) return false;
+
+        return true;
+    });
 
     // --- CALCULO METRICAS GLOBALES (MENSAJES / VENTAS) ---
     // Logica: Sumar mensajes/ventas de globalBusinessStats que coincidan con el filtro de fecha
@@ -3036,36 +3040,35 @@ function renderStatsCharts() {
         }
     });
 
-    // 4. Gráfico de Métricas de Tiempo (Reels) - NUEVO
-    // Solo mostrar si hay datos de Reels con información de tiempo y estamos en formato Reel o viendo todo
-    // USAR filteredStats en lugar de statistics para respetar los filtros globales
+    // 4. Gráfico de Duración y Retención (Reels) - Primera Gráfica
+    // Solo mostrar si hay datos de Reels con información de tiempo
     const reelRetentionStats = filteredStats.filter(s => {
         const guion = guiones.find(g => g.id === s.guion_id);
-        return guion && guion.formato === 'Reel' && (s.metrics.total_duration > 0 || s.metrics.total_playback_time > 0);
+        return guion && guion.formato === 'Reel' && (s.metrics.total_duration > 0 || s.metrics.avg_watch_time > 0);
     });
 
     if (reelRetentionStats.length > 0) {
-        const retentionCanvas = document.createElement('canvas');
-        retentionCanvas.id = 'chart-retention';
+        // PRIMERA GRÁFICA: Duración y Retención
+        const durationCanvas = document.createElement('canvas');
+        durationCanvas.id = 'chart-duration-retention';
 
-        const retentionCard = document.createElement('div');
-        retentionCard.className = 'chart-card';
-        retentionCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
-        retentionCard.innerHTML = `<h3 style="margin-bottom: 15px;">Métricas de Tiempo (Reels)</h3>`;
+        const durationCard = document.createElement('div');
+        durationCard.className = 'chart-card';
+        durationCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
+        durationCard.innerHTML = `<h3 style="margin-bottom: 15px;">Duración y Retención (Reels)</h3>`;
 
-        const retentionContainer = document.createElement('div');
-        retentionContainer.style.position = 'relative';
-        retentionContainer.style.height = '300px';
-        retentionContainer.style.width = '100%';
-        retentionContainer.appendChild(retentionCanvas);
+        const durationContainer = document.createElement('div');
+        durationContainer.style.position = 'relative';
+        durationContainer.style.height = '300px';
+        durationContainer.style.width = '100%';
+        durationContainer.appendChild(durationCanvas);
 
-        retentionCard.appendChild(retentionContainer);
-        chartsGrid.appendChild(retentionCard);
+        durationCard.appendChild(durationContainer);
+        chartsGrid.appendChild(durationCard);
 
         const labels = [];
         const durationData = [];
         const watchTimeData = [];
-        const playbackData = [];
 
         reelRetentionStats.forEach(s => {
             const guion = guiones.find(g => g.id === s.guion_id);
@@ -3073,21 +3076,19 @@ function renderStatsCharts() {
 
             const total = parseFloat(s.metrics.total_duration || 0);
             const avg = parseFloat(s.metrics.avg_watch_time || 0);
-            const playback = parseFloat(s.metrics.total_playback_time || 0);
 
             durationData.push(total);
             watchTimeData.push(avg);
-            playbackData.push(playback);
         });
 
-        const ctxRetention = retentionCanvas.getContext('2d');
-        chartInstances['retention'] = new Chart(ctxRetention, {
+        const ctxDuration = durationCanvas.getContext('2d');
+        chartInstances['duration-retention'] = new Chart(ctxDuration, {
             type: 'bar',
             data: {
                 labels: labels,
                 datasets: [
                     {
-                        label: 'Duración Video (s)',
+                        label: 'Duración Video',
                         data: durationData,
                         backgroundColor: 'rgba(59, 130, 246, 0.7)', // Blue
                         borderRadius: 4,
@@ -3095,17 +3096,9 @@ function renderStatsCharts() {
                         categoryPercentage: 0.8
                     },
                     {
-                        label: 'Tiempo Promedio (s)',
+                        label: 'Tiempo Promedio Visto',
                         data: watchTimeData,
                         backgroundColor: 'rgba(16, 185, 129, 0.7)', // Green
-                        borderRadius: 4,
-                        barPercentage: 0.8,
-                        categoryPercentage: 0.8
-                    },
-                    {
-                        label: 'Tiempo Total Rep. (s)',
-                        data: playbackData,
-                        backgroundColor: 'rgba(249, 115, 22, 0.7)', // Orange
                         borderRadius: 4,
                         barPercentage: 0.8,
                         categoryPercentage: 0.8
@@ -3129,22 +3122,108 @@ function renderStatsCharts() {
                     },
                     x: {
                         grid: { display: false },
-                        ticks: { color: '#94a3b8' }
+                        ticks: { color: '#94a3b8', maxRotation: 45, minRotation: 45 }
                     }
                 },
                 plugins: {
                     legend: {
                         position: 'top',
-                        labels: { color: '#94a3b8' }
+                        labels: { color: '#94a3b8', font: { size: 12 } }
                     },
                     tooltip: {
                         callbacks: {
                             label: function (context) {
                                 const seconds = context.parsed.y;
                                 const label = context.dataset.label;
-                                // Format as HH:MM:SS for all time metrics or just Total?
-                                // User asked "que asi se vea en la grafica".
-                                return `${label}: ${formatSecondsToHMS(seconds)} (${seconds}s)`;
+                                return `${label}: ${formatSecondsToHMS(seconds)}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // 5. Gráfico de Tiempo Total de Reproducción (Reels) - Segunda Gráfica
+    const reelPlaybackStats = filteredStats.filter(s => {
+        const guion = guiones.find(g => g.id === s.guion_id);
+        return guion && guion.formato === 'Reel' && (s.metrics.total_playback_time > 0);
+    });
+
+    if (reelPlaybackStats.length > 0) {
+        const playbackCanvas = document.createElement('canvas');
+        playbackCanvas.id = 'chart-total-playback';
+
+        const playbackCard = document.createElement('div');
+        playbackCard.className = 'chart-card';
+        playbackCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
+        playbackCard.innerHTML = `<h3 style="margin-bottom: 15px;">Tiempo Total de Reproducción (Reels)</h3>`;
+
+        const playbackContainer = document.createElement('div');
+        playbackContainer.style.position = 'relative';
+        playbackContainer.style.height = '300px';
+        playbackContainer.style.width = '100%';
+        playbackContainer.appendChild(playbackCanvas);
+
+        playbackCard.appendChild(playbackContainer);
+        chartsGrid.appendChild(playbackCard);
+
+        const playbackLabels = [];
+        const playbackData = [];
+
+        reelPlaybackStats.forEach(s => {
+            const guion = guiones.find(g => g.id === s.guion_id);
+            playbackLabels.push(guion.titulo.length > 15 ? guion.titulo.substring(0, 15) + '...' : guion.titulo);
+
+            const playback = parseFloat(s.metrics.total_playback_time || 0);
+            playbackData.push(playback);
+        });
+
+        const ctxPlayback = playbackCanvas.getContext('2d');
+        chartInstances['total-playback'] = new Chart(ctxPlayback, {
+            type: 'bar',
+            data: {
+                labels: playbackLabels,
+                datasets: [
+                    {
+                        label: 'Tiempo Total de Reproducción',
+                        data: playbackData,
+                        backgroundColor: 'rgba(249, 115, 22, 0.7)', // Orange
+                        borderRadius: 4,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.9
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: {
+                            color: '#94a3b8',
+                            callback: function (value) {
+                                return formatSecondsToHMS(value);
+                            }
+                        },
+                        title: { display: true, text: 'Tiempo (HH:MM:SS)', color: '#94a3b8' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8', maxRotation: 45, minRotation: 45 }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false // No necesita leyenda con un solo dataset
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const seconds = context.parsed.y;
+                                return `Tiempo Total: ${formatSecondsToHMS(seconds)}`;
                             }
                         }
                     }
