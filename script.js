@@ -2827,25 +2827,36 @@ function renderStatsCharts() {
             plugins: {
                 legend: {
                     position: 'top',
-                    if(dataIndex > 0) {
-        const previousValue = context.dataset.data[dataIndex - 1] || 0;
-        dailyGain = currentValue - previousValue;
-    }
+                    labels: { color: '#94a3b8', padding: 15, font: { size: 11 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const label = context.dataset.label || '';
+                            const currentValue = context.parsed.y || 0;
+                            const dataIndex = context.dataIndex;
+                            let dailyGain = currentValue;
 
-    return [
-        `${label}:`,
-        `  Ganaste hoy: +${dailyGain.toLocaleString()}`,
-        `  Total acumulado: ${currentValue.toLocaleString()}`
-    ];
-},
-footer: function (tooltipItems) {
-    return 'Incluye reels + orgánicos';
-}
+                            if (dataIndex > 0) {
+                                const previousValue = context.dataset.data[dataIndex - 1] || 0;
+                                dailyGain = currentValue - previousValue;
+                            }
+
+                            return [
+                                `${label}:`,
+                                `  Ganaste hoy: +${dailyGain.toLocaleString()}`,
+                                `  Total acumulado: ${currentValue.toLocaleString()}`
+                            ];
+                        },
+                        footer: function (tooltipItems) {
+                            return 'Incluye reels + orgánicos';
+                        }
                     }
                 }
             }
         }
     });
+}
 }
 
 // Función para calcular seguidores ACUMULATIVOS día a día (reels + orgánicos)
