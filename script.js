@@ -333,7 +333,11 @@ function showWorkspaceSelector() {
             ${icon}
             <div class="workspace-name">${ws.display_name}</div>
             <div class="workspace-desc">Calendario ${ws.display_name.toLowerCase()}</div>
+            <button class="edit-ws-btn" onclick="openEditWorkspaceModal('${ws.name}', event)" title="Editar" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            </button>
         `;
+        button.style.position = 'relative'; // Ensure positioning context
 
         buttonsContainer.appendChild(button);
     });
@@ -1302,8 +1306,12 @@ function viewGuion(id) {
         contenidoDiv.textContent = 'Sin contenido';
     }
 
-    // Mostrar notas
-    document.getElementById('viewGuionNotas').textContent = guion.notas || 'Sin notas';
+
+    // Mostrar notas y b-roll
+    document.getElementById('viewGuionNotas').innerHTML = `
+        <div><strong>Notas:</strong> ${guion.notas || 'Sin notas'}</div>
+        <div style="margin-top:8px;"><strong>B-roll:</strong> <pre style="font-family:inherit; white-space: pre-wrap; margin:0;">${guion.b_roll || 'Sin B-roll'}</pre></div>
+    `;
 
     // Abrir modal con función centralizada
     openModal('viewGuionModal');
@@ -1346,7 +1354,8 @@ function editGuion(id) {
     });
 
     document.getElementById('guionEstado').value = guion.estado;
-    document.getElementById('guionNotas').value = guion.notas;
+    document.getElementById('guionNotas').value = guion.notas || '';
+    document.getElementById('guionBroll').value = guion.b_roll || '';
 
     document.getElementById('guionModalTitle').textContent = 'Editar Guión';
 
@@ -1391,6 +1400,7 @@ function resetGuionForm() {
 
     document.getElementById('guionEstado').value = 'Idea';
     document.getElementById('guionNotas').value = '';
+    document.getElementById('guionBroll').value = '';
 
     // Inicializar editor de script
     initScriptEditor('Carrusel');
@@ -1427,7 +1437,7 @@ function initScriptEditor(formato) {
                 <thead>
                     <tr>
                         <th style="width: 10%;">N° Escena</th>
-                        <th style="width: 15%;">Plano</th>
+                        <th style="width: 15%;">Plano / Movimiento de cámara</th>
                         <th style="width: 30%;">Descripción del video</th>
                         <th style="width: 25%;">Diálogo</th>
                         <th style="width: 15%;">Descripción del audio</th>
@@ -1452,10 +1462,10 @@ function addScriptRow(formato, data = null) {
 
     if (formato === 'Carrusel') {
         row.innerHTML = `
-            <td><input type="text" placeholder="1" value="${data?.slide || ''}" /></td>
-            <td><textarea placeholder="Descripción de imagen..." rows="2">${data?.imagen || ''}</textarea></td>
-            <td><textarea placeholder="Descripción detallada..." rows="2">${data?.descripcion || ''}</textarea></td>
-            <td><textarea placeholder="Texto overlay..." rows="2">${data?.texto || ''}</textarea></td>
+            <td><input type="text" value="${data?.slide || ''}" /></td>
+            <td><textarea rows="2">${data?.imagen || ''}</textarea></td>
+            <td><textarea rows="2">${data?.descripcion || ''}</textarea></td>
+            <td><textarea rows="2">${data?.texto || ''}</textarea></td>
             <td>
                 <button type="button" class="btn-delete-row" onclick="deleteScriptRow(this)" title="Eliminar fila">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1467,11 +1477,11 @@ function addScriptRow(formato, data = null) {
         `;
     } else if (formato === 'Reel') {
         row.innerHTML = `
-            <td><input type="text" placeholder="1" value="${data?.escena || ''}" /></td>
-            <td><input type="text" placeholder="Plano general..." value="${data?.plano || ''}" /></td>
-            <td><textarea placeholder="Descripción del video..." rows="2">${data?.descripcion || ''}</textarea></td>
-            <td><textarea placeholder="Diálogo o voz en off..." rows="2">${data?.dialogo || ''}</textarea></td>
-            <td><textarea placeholder="Música, efectos..." rows="2">${data?.audio || ''}</textarea></td>
+            <td><input type="text" value="${data?.escena || ''}" /></td>
+            <td><textarea rows="2">${data?.plano || ''}</textarea></td>
+            <td><textarea rows="2">${data?.descripcion || ''}</textarea></td>
+            <td><textarea rows="2">${data?.dialogo || ''}</textarea></td>
+            <td><textarea rows="2">${data?.audio || ''}</textarea></td>
             <td>
                 <button type="button" class="btn-delete-row" onclick="deleteScriptRow(this)" title="Eliminar fila">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1667,12 +1677,17 @@ async function renderUsersList() {
                             Acceso: ${accessText}
                         </div>
                     </div>
-                    <button onclick="deleteUser('${email}')" class="btn-icon btn-delete" style="flex-shrink: 0;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                    </button>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="editUser('${email}')" class="btn-icon btn-edit" style="flex-shrink: 0;" title="Editar">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </button>
+                        <button onclick="deleteUser('${email}')" class="btn-icon btn-delete" style="flex-shrink: 0;" title="Eliminar">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -2853,6 +2868,123 @@ function renderStatsCharts() {
             }
         }
     });
+
+    // 4. Gráfico de Retención de Audiencia (Reels) - NUEVO
+    // Solo mostrar si hay datos de Reels con información de tiempo
+    const reelRetentionStats = statistics.filter(s => {
+        const guion = guiones.find(g => g.id === s.guion_id);
+        return guion && guion.formato === 'Reel' && s.metrics.total_duration > 0;
+    });
+
+    if (reelRetentionStats.length > 0) {
+        const retentionCanvas = document.createElement('canvas');
+        retentionCanvas.id = 'chart-retention';
+
+        const retentionCard = document.createElement('div');
+        retentionCard.className = 'chart-card';
+        retentionCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
+        retentionCard.innerHTML = `<h3 style="margin-bottom: 15px;">Retención de Audiencia (Reels)</h3>`;
+
+        const retentionContainer = document.createElement('div');
+        retentionContainer.style.position = 'relative';
+        retentionContainer.style.height = '300px';
+        retentionContainer.style.width = '100%';
+        retentionContainer.appendChild(retentionCanvas);
+
+        retentionCard.appendChild(retentionContainer);
+        chartsGrid.appendChild(retentionCard);
+
+        const labels = [];
+        const durationData = [];
+        const watchTimeData = [];
+        const retentionRateData = []; // Calculado: (Avg / Total) * 100
+
+        reelRetentionStats.forEach(s => {
+            const guion = guiones.find(g => g.id === s.guion_id);
+            labels.push(guion.titulo.length > 15 ? guion.titulo.substring(0, 15) + '...' : guion.titulo);
+
+            const total = parseFloat(s.metrics.total_duration || 0);
+            const avg = parseFloat(s.metrics.avg_watch_time || 0);
+
+            durationData.push(total);
+            watchTimeData.push(avg);
+            retentionRateData.push(total > 0 ? ((avg / total) * 100).toFixed(1) : 0);
+        });
+
+        const ctxRetention = retentionCanvas.getContext('2d');
+        chartInstances['retention'] = new Chart(ctxRetention, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Duración Total (s)',
+                        data: durationData,
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)', // Blue
+                        borderRadius: 4,
+                        order: 2
+                    },
+                    {
+                        label: 'Tiempo Promedio (s)',
+                        data: watchTimeData,
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)', // Green
+                        borderRadius: 4,
+                        order: 3
+                    },
+                    {
+                        label: 'Tasa Retención (%)',
+                        data: retentionRateData,
+                        type: 'line',
+                        borderColor: '#f59e0b', // Amber/Orange
+                        borderWidth: 2,
+                        yAxisID: 'y1',
+                        pointBackgroundColor: '#f59e0b',
+                        order: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        ticks: { color: '#94a3b8' },
+                        title: { display: true, text: 'Segundos', color: '#94a3b8' }
+                    },
+                    y1: {
+                        position: 'right',
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8', callback: v => v + '%' },
+                        title: { display: true, text: 'Retención %', color: '#94a3b8' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { color: '#94a3b8' }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const label = context.dataset.label;
+                                const value = context.parsed.y;
+                                if (label.includes('%')) return `${label}: ${value}%`;
+                                return `${label}: ${value}s`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
 
 
@@ -2990,4 +3122,10 @@ function calculateMonthlyFollowers() {
     });
 
     return { labels, instagram: instagramData, tiktok: tiktokData, facebook: facebookData };
+}
+
+// Función para abrir modal de edición de workspace (placeholder)
+function openEditWorkspaceModal(workspaceName, event) {
+    if (event) event.stopPropagation();
+    alert(`Editar calendario: ${workspaceName}\n(Funcionalidad en desarrollo - Backend requerido)`);
 }
