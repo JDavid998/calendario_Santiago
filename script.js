@@ -1853,15 +1853,87 @@ function renderWorkspacesList() {
     let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
 
     workspaces.forEach(ws => {
-                    </div >
-            ${ deleteBtn }
-                </div >
-            </div >
-            `;
+        // No permitir borrar los default
+        const isDefault = ws.name === 'personal' || ws.name === 'maacline';
+
+        const deleteButton = isDefault ? '' : `
+            <button onclick="deleteWorkspace('${ws.name}')" class="btn-icon btn-delete" title="Eliminar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+            </button>
+        `;
+
+        html += `
+            <div class="workspace-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 8px;">
+                <div>
+                    <strong style="color: var(--text-primary);">${ws.display_name}</strong>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">ID: ${ws.name}</div>
+                    ${isDefault ? '<div style="font-size: 0.85rem; color: var(--primary-light);">Calendario predeterminado</div>' : ''}
+                </div>
+                 <div style="display: flex; gap: 8px;">
+                    <button onclick="editWorkspace('${ws.name}', '${ws.display_name}')" class="btn-icon btn-edit" title="Editar">
+                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </button>
+                    ${deleteButton}
+                </div>
+            </div>
+        `;
     });
 
     html += '</div>';
     workspacesList.innerHTML = html;
+}
+
+// Editar workspace
+window.editWorkspace = function (name, displayName) {
+    const modal = document.getElementById('addWorkspaceModal');
+    document.getElementById('modalTitleWorkspace').textContent = 'Editar Calendario';
+
+    document.getElementById('newWorkspaceName').value = name;
+    document.getElementById('newWorkspaceName').disabled = true; // ID no editable
+    document.getElementById('newWorkspaceDisplayName').value = displayName;
+
+    // Cambiar comportamiento del botón guardar
+    const saveBtn = document.getElementById('saveWorkspaceBtn');
+    saveBtn.textContent = 'Actualizar';
+
+    // Remover listeners anteriores para evitar duplicados (clonar nodo)
+    const newBtn = saveBtn.cloneNode(true);
+    saveBtn.parentNode.replaceChild(newBtn, saveBtn);
+
+    newBtn.addEventListener('click', async () => {
+        const newDisplayName = document.getElementById('newWorkspaceDisplayName').value.trim();
+        if (!newDisplayName) return alert('Nombre requerido');
+
+        try {
+            await fetch('/api/data?action=updateWorkspace', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, display_name: newDisplayName })
+            });
+
+            // Recargar
+            const response = await fetch('/api/data?action=getWorkspaces');
+            if (response.ok) workspaces = await response.json();
+            renderWorkspacesList();
+            closeModal('addWorkspaceModal');
+
+            // Restaurar estado del modal
+            document.getElementById('modalTitleWorkspace').textContent = 'Nuevo Calendario';
+            document.getElementById('newWorkspaceName').disabled = false;
+            newBtn.textContent = 'Crear';
+            // Restaurar listener original (createNewWorkspace) - requiere recargar página o reasignar
+            newBtn.addEventListener('click', createNewWorkspace);
+
+        } catch (e) {
+            console.error(e);
+            alert('Error al actualizar');
+        }
+    });
+
+    openModal('addWorkspaceModal');
 }
 
 // Crear nuevo calendario
@@ -1909,7 +1981,7 @@ async function deleteWorkspace(id) {
     }
 
     try {
-        const response = await fetch(`/ api / data ? action = deleteWorkspace & workspaceId=${ id } `, {
+        const response = await fetch(`/ api / data ? action = deleteWorkspace & workspaceId=${id} `, {
             method: 'DELETE'
         });
 
@@ -1939,7 +2011,7 @@ function renderUserCalendarsCheckboxes() {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.value = ws.name;
-        checkbox.id = `access_${ ws.name } `;
+        checkbox.id = `access_${ws.name} `;
 
         // Marcar MAAC Line por defecto
         if (ws.name === 'maacline') {
@@ -2039,7 +2111,7 @@ function openGlobalStatsModal() {
 }
 
 function loadGlobalStatsForForm(month, year) {
-    const key = `${ year } -${ String(month).padStart(2, '0') } `;
+    const key = `${year} -${String(month).padStart(2, '0')} `;
     const data = globalBusinessStats[key] || { messages: 0, sales: 0 };
 
     document.getElementById('statsMessages').value = data.messages || 0;
@@ -2052,7 +2124,7 @@ function saveGlobalStats() {
     const messages = parseInt(document.getElementById('statsMessages').value) || 0;
     const sales = parseInt(document.getElementById('statsSales').value) || 0;
 
-    const monthStr = `${ year } -${ String(month).padStart(2, '0') } `;
+    const monthStr = `${year} -${String(month).padStart(2, '0')} `;
 
     const data = {
         messages,
@@ -2064,7 +2136,7 @@ function saveGlobalStats() {
 
     // Guardar con separación por workspace
     if (IS_LOCAL_MODE) {
-        localStorage.setItem(`local_globalStats_${ currentWorkspace } `, JSON.stringify(globalBusinessStats));
+        localStorage.setItem(`local_globalStats_${currentWorkspace} `, JSON.stringify(globalBusinessStats));
     } else {
         // Guardar en base de datos
         fetch('/api/data?action=saveGlobalStats', {
@@ -2093,7 +2165,7 @@ function saveGlobalStats() {
     // Calcular el último día del mes seleccionado
     const [year, month] = monthStr.split('-').map(Number);
     const lastDay = new Date(year, month, 0).getDate(); // Día 0 del siguiente mes = último día del mes actual
-    const savedDate = `${ year } -${ String(month).padStart(2, '0') } -${ String(lastDay).padStart(2, '0') } `;
+    const savedDate = `${year} -${String(month).padStart(2, '0')} -${String(lastDay).padStart(2, '0')} `;
 
     const data = {
         savedDate: savedDate, // Último día del mes seleccionado
@@ -2118,7 +2190,7 @@ function saveGlobalStats() {
 
     // Guardar con separación por workspace
     if (IS_LOCAL_MODE) {
-        localStorage.setItem(`local_globalStats_${ currentWorkspace } `, JSON.stringify(globalBusinessStats));
+        localStorage.setItem(`local_globalStats_${currentWorkspace} `, JSON.stringify(globalBusinessStats));
     } else {
         // Guardar en base de datos
         fetch('/api/data?action=saveGlobalStats', {
@@ -2197,7 +2269,7 @@ function renderStatsEntryList() {
         card.innerHTML = `
             < div class="guion-card-header" >
                 <span class="guion-date">${g.fecha}</span>
-                ${ statusBadge }
+                ${statusBadge}
             </div >
             <h3 class="guion-title">${g.titulo}</h3>
             <div class="guion-meta">
@@ -2331,7 +2403,7 @@ function openStatsModal(guionId) {
     const guion = guiones.find(g => g.id === guionId);
     if (!guion) return;
 
-    document.getElementById('statsModalTitle').textContent = `Estadísticas: ${ guion.titulo } `;
+    document.getElementById('statsModalTitle').textContent = `Estadísticas: ${guion.titulo} `;
     document.getElementById('saveStatsBtn').dataset.guionId = guionId;
 
     const container = document.getElementById('statsFormsContainer');
@@ -2365,8 +2437,8 @@ function openStatsModal(guionId) {
             // Historia: Visualizaciones, Reacciones, Mensajes Directos
             fieldsHTML = `
             < div class="form-row" >
-                ${ createInput('Visualizaciones', 'views', metrics.views) }
-                    ${ createInput('Reacciones (Likes)', 'likes', metrics.likes) }
+                ${createInput('Visualizaciones', 'views', metrics.views)}
+                    ${createInput('Reacciones (Likes)', 'likes', metrics.likes)}
                 </div >
             <div class="form-row">
                 ${createInput('Mensajes Directos', 'messages', metrics.messages)}
@@ -2376,8 +2448,8 @@ function openStatsModal(guionId) {
             // Carrusel: No tiempo promedio, no mensajes, no ventas
             fieldsHTML = `
             < div class="form-row" >
-                ${ createInput('Seguidores Obtenidos', 'followers', metrics.followers) }
-                    ${ createInput('Visualizaciones', 'views', metrics.views) }
+                ${createInput('Seguidores Obtenidos', 'followers', metrics.followers)}
+                    ${createInput('Visualizaciones', 'views', metrics.views)}
                 </div >
                 <div class="form-row">
                     ${createInput('Likes', 'likes', metrics.likes)}
@@ -2392,8 +2464,8 @@ function openStatsModal(guionId) {
             // Reel: Todo lo standard + Tiempo Total antes de Tiempo Promedio. No mensajes, no ventas.
             fieldsHTML = `
             < div class="form-row" >
-                ${ createInput('Seguidores Obtenidos', 'followers', metrics.followers) }
-                    ${ createInput('Visualizaciones', 'views', metrics.views) }
+                ${createInput('Seguidores Obtenidos', 'followers', metrics.followers)}
+                    ${createInput('Visualizaciones', 'views', metrics.views)}
                 </div >
                 <div class="form-row">
                     ${createInput('Likes', 'likes', metrics.likes)}
@@ -2415,13 +2487,13 @@ function openStatsModal(guionId) {
             // Fallback genérico
             fieldsHTML = `
             < div class="form-row" >
-                ${ createInput('Vistas/Impresiones', 'views', metrics.views) }
-                    ${ createInput('Interacciones', 'interactions', metrics.interactions || (metrics.likes || 0)) }
+                ${createInput('Vistas/Impresiones', 'views', metrics.views)}
+                    ${createInput('Interacciones', 'interactions', metrics.interactions || (metrics.likes || 0))}
                 </div >
             `;
         }
 
-        platformSection.innerHTML = `< h4 style = "margin-bottom: 15px; color: var(--primary); text-transform: uppercase; font-size: 0.9rem;" > ${ platform } <small style="color:var(--text-secondary); text-transform:none;">(${format})</small></h4 > <div class="platform-inputs" data-platform="${platform}">${fieldsHTML}</div>`;
+        platformSection.innerHTML = `< h4 style = "margin-bottom: 15px; color: var(--primary); text-transform: uppercase; font-size: 0.9rem;" > ${platform} <small style="color:var(--text-secondary); text-transform:none;">(${format})</small></h4 > <div class="platform-inputs" data-platform="${platform}">${fieldsHTML}</div>`;
         container.appendChild(platformSection);
     });
 
@@ -2458,7 +2530,7 @@ async function saveStatistics() {
             if (IS_LOCAL_MODE) {
                 newStats.push({ guion_id: guionId, platform: platform, metrics: metrics });
             } else {
-                await fetch(`/ api / data ? action = saveStatistic & workspace=${ currentWorkspace } `, {
+                await fetch(`/ api / data ? action = saveStatistic & workspace=${currentWorkspace} `, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ guionId: guionId, platform: platform, metrics: metrics })
@@ -2469,13 +2541,13 @@ async function saveStatistics() {
         if (IS_LOCAL_MODE) {
             statistics = statistics.filter(s => s.guion_id !== guionId);
             statistics = [...statistics, ...newStats];
-            localStorage.setItem(`local_stats_${ currentWorkspace } `, JSON.stringify(statistics));
+            localStorage.setItem(`local_stats_${currentWorkspace} `, JSON.stringify(statistics));
             await new Promise(r => setTimeout(r, 200));
             renderStatisticsUI();
             closeModal('statsModal');
             alert('Estadísticas guardadas LOCALMENTE');
         } else {
-            const statsRes = await fetch(`/ api / data ? action = getStatistics & workspace=${ currentWorkspace } `);
+            const statsRes = await fetch(`/ api / data ? action = getStatistics & workspace=${currentWorkspace} `);
             if (statsRes.ok) {
                 statistics = await statsRes.json();
                 renderStatisticsUI();
@@ -2597,7 +2669,7 @@ function renderStatsCharts() {
                             label: function (context) {
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                 const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                return `${ context.label }: ${ context.parsed.toLocaleString() } vistas(${ percentage } %)`;
+                                return `${context.label}: ${context.parsed.toLocaleString()} vistas(${percentage} %)`;
                             }
                         }
                     },
@@ -2613,7 +2685,7 @@ function renderStatsCharts() {
         // Modo: Vistas por Reel Individual (filtrado por plataforma)
         unifiedCard.insertBefore(
             Object.assign(document.createElement('h3'), {
-                textContent: `Rendimiento de Reels - ${ currentStatsFilterPlatform } `,
+                textContent: `Rendimiento de Reels - ${currentStatsFilterPlatform} `,
                 style: 'margin-bottom: 15px;'
             }),
             unifiedContainer
@@ -2838,9 +2910,9 @@ function renderStatsCharts() {
                             }
 
                             return [
-                                `${ label }: `,
-                                `  Ganaste hoy: +${ dailyGain.toLocaleString() } `,
-                                `  Total acumulado: ${ currentValue.toLocaleString() } `
+                                `${label}: `,
+                                `  Ganaste hoy: +${dailyGain.toLocaleString()} `,
+                                `  Total acumulado: ${currentValue.toLocaleString()} `
                             ];
                         },
                         footer: function (tooltipItems) {
@@ -2951,7 +3023,7 @@ function renderStatsCharts() {
                     tooltip: {
                         callbacks: {
                             label: function (context) {
-                                return `${ context.dataset.label }: ${ context.parsed.y } s`;
+                                return `${context.dataset.label}: ${context.parsed.y} s`;
                             }
                         }
                     }
@@ -3014,13 +3086,13 @@ function calculateMonthlyFollowers() {
         // Si hay filtro de mes, empezar el día 1 de ese mes
         const filterMonth = parseInt(currentStatsFilterMonth);
         const filterYear = currentStatsFilterYear !== 'all' ? parseInt(currentStatsFilterYear) : firstDate.getFullYear();
-        startDate = `${ filterYear } -${ String(filterMonth + 1).padStart(2, '0') }-01`;
+        startDate = `${filterYear} -${String(filterMonth + 1).padStart(2, '0')}-01`;
     } else if (currentStatsFilterYear !== 'all') {
         // Si hay filtro de año, empezar el 1 de enero de ese año
-        startDate = `${ currentStatsFilterYear }-01-01`;
+        startDate = `${currentStatsFilterYear}-01-01`;
     } else {
         // Sin filtros, empezar el día 1 del mes del primer dato
-        startDate = `${ firstDate.getFullYear() } -${ String(firstDate.getMonth() + 1).padStart(2, '0') }-01`;
+        startDate = `${firstDate.getFullYear()} -${String(firstDate.getMonth() + 1).padStart(2, '0')}-01`;
     }
 
     // Agregar fecha inicial si no está ya en los datos
@@ -3044,14 +3116,14 @@ function calculateMonthlyFollowers() {
         const date = new Date(dateStr + 'T12:00:00');
         const year = date.getFullYear();
         const month = date.getMonth() + 1;
-        const monthStr = `${ year } -${ String(month).padStart(2, '0') } `;
+        const monthStr = `${year} -${String(month).padStart(2, '0')} `;
 
         // Formatear label
         const day = date.getDate();
         const monthName = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][date.getMonth()];
 
         // Mostrar día y mes
-        labels.push(`${ day } ${ monthName } `);
+        labels.push(`${day} ${monthName} `);
 
         let igFollowersToday = 0;
         let tkFollowersToday = 0;
@@ -3099,82 +3171,82 @@ function calculateMonthlyFollowers() {
 }
 
 // Función para editar usuario (Cliente Logic)
-window.editUser = async function(email) {
+window.editUser = async function (email) {
     const users = await getUsersFromStorage();
     const user = users[email];
-    
+
     if (!user) return alert('Usuario no encontrado');
 
     const modal = document.getElementById('addUserModal');
     // Set text content properly
     const titleEl = modal.querySelector('h2') || document.getElementById('modalTitleUser');
     if (titleEl) titleEl.textContent = 'Editar Usuario';
-    
+
     document.getElementById('newUserEmail').value = email;
     document.getElementById('newUserEmail').disabled = true; // Email es ID
     document.getElementById('newUserName').value = user.name || '';
     document.getElementById('newUserPassword').value = ''; // No mostrar password
     document.getElementById('newUserPassword').placeholder = '(Dejar en blanco para no cambiar)';
     document.getElementById('newUserRole').value = user.role || 'client';
-    
+
     // Checkboxes
     const container = document.getElementById('userCalendarsContainer');
     // Regenerar checkboxes para asegurar estado limpio
-    container.innerHTML = ''; 
+    container.innerHTML = '';
     // Usar la misma lógica de generación que en addUser
     workspaces.forEach(ws => {
         const div = document.createElement('div');
         div.style.marginBottom = '5px';
         const checked = user.canAccess && user.canAccess.includes(ws.name) ? 'checked' : '';
         div.innerHTML = `
-            < input type = "checkbox" id = "access_${ws.name}" value = "${ws.name}" ${ checked }>
-                <label for="access_${ws.name}">${ws.display_name}</label>
+            <input type="checkbox" id="access_${ws.name}" value="${ws.name}" ${checked}>
+            <label for="access_${ws.name}">${ws.display_name}</label>
         `;
         container.appendChild(div);
     });
 
     const saveBtn = document.getElementById('saveUserBtn');
     saveBtn.textContent = 'Actualizar';
-    
+
     // Swapping listener to updates
     const newBtn = saveBtn.cloneNode(true);
     saveBtn.parentNode.replaceChild(newBtn, saveBtn);
-    
+
     newBtn.addEventListener('click', async () => {
         const name = document.getElementById('newUserName').value.trim();
         const password = document.getElementById('newUserPassword').value;
         const role = document.getElementById('newUserRole').value;
-        
+
         const canAccess = [];
         container.querySelectorAll('input:checked').forEach(cb => canAccess.push(cb.value));
-        
+
         if (!name) return alert('Nombre requerido');
         if (canAccess.length === 0) return alert('Selecciona al menos un calendario');
-        
+
         try {
             await fetch('/api/data?action=updateUser', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    email, 
-                    name, 
-                    role, 
+                body: JSON.stringify({
+                    email,
+                    name,
+                    role,
                     canAccess,
-                    password: password || undefined 
+                    password: password || undefined
                 })
             });
-            
+
             closeModal('addUserModal');
             await renderUsersList();
             alert('Usuario actualizado');
-            
+
             // Restore modal state for next "New User"
             if (titleEl) titleEl.textContent = 'Nuevo Usuario';
             document.getElementById('newUserEmail').disabled = false;
             document.getElementById('newUserPassword').placeholder = '';
             newBtn.textContent = 'Guardar';
             newBtn.addEventListener('click', window.saveNewUser);
-            
+
         } catch (e) {
             console.error(e);
             alert('Error al actualizar usuario');
