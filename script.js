@@ -2302,22 +2302,59 @@ function renderStatisticsUI() {
 
 function openGlobalStatsModal() {
     openModal('globalStatsModal');
-    // Pre-fill con el mes actual del filtro o del sistema
-    const month = currentStatsFilterMonth !== 'all' ? parseInt(currentStatsFilterMonth) : new Date().getMonth();
-    const year = currentStatsFilterYear !== 'all' ? parseInt(currentStatsFilterYear) : new Date().getFullYear();
 
-    document.getElementById('statsMonthSelect').value = month;
-    document.getElementById('statsYearInput').value = year;
+    // Obtener mes actual del input si ya tiene valor, o usar el filtro
+    let initialMonthStr = document.getElementById('globalStatsMonth').value;
 
-    loadGlobalStatsForForm(month, year);
+    if (!initialMonthStr) {
+        const currentDate = new Date();
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        initialMonthStr = `${year}-${month}`;
+        document.getElementById('globalStatsMonth').value = initialMonthStr;
+    }
+
+    // Cargar datos al cambiar la fecha
+    document.getElementById('globalStatsMonth').onchange = (e) => {
+        loadGlobalStatsForForm(e.target.value);
+    };
+
+    // Cargar datos iniciales
+    loadGlobalStatsForForm(initialMonthStr);
 }
 
-function loadGlobalStatsForForm(month, year) {
-    const key = `${year} -${String(month).padStart(2, '0')} `;
-    const data = globalBusinessStats[key] || { messages: 0, sales: 0 };
+function loadGlobalStatsForForm(monthStr) {
+    if (!monthStr) return;
 
-    document.getElementById('statsMessages').value = data.messages || 0;
-    document.getElementById('statsSales').value = data.sales || 0;
+    // Intentar encontrar con formato corregido (sin espacios) o fallback al antiguo (con espacios)
+    let data = globalBusinessStats[monthStr];
+
+    if (!data) {
+        // Intentar buscar con formato antiguo por si acaso
+        const [year, month] = monthStr.split('-');
+        const oldKey = `${year} -${month} `; // Formato antiguo con espacios
+        data = globalBusinessStats[oldKey];
+    }
+
+    data = data || {};
+
+    // Populate Instagram
+    document.getElementById('gs-ig-followers-organic').value = data.ig?.followersOrganic || 0;
+    document.getElementById('gs-ig-followers-lost').value = data.ig?.followersLost || 0; // Nuevo
+    document.getElementById('gs-ig-messages').value = data.ig?.messages || 0;
+    document.getElementById('gs-ig-sales').value = data.ig?.sales || 0;
+
+    // Populate TikTok
+    document.getElementById('gs-tk-followers-organic').value = data.tk?.followersOrganic || 0;
+    document.getElementById('gs-tk-followers-lost').value = data.tk?.followersLost || 0; // Nuevo
+    document.getElementById('gs-tk-messages').value = data.tk?.messages || 0;
+    document.getElementById('gs-tk-sales').value = data.tk?.sales || 0;
+
+    // Populate Facebook
+    document.getElementById('gs-fb-followers-organic').value = data.fb?.followersOrganic || 0;
+    document.getElementById('gs-fb-followers-lost').value = data.fb?.followersLost || 0; // Nuevo
+    document.getElementById('gs-fb-messages').value = data.fb?.messages || 0;
+    document.getElementById('gs-fb-sales').value = data.fb?.sales || 0;
 }
 
 function saveGlobalStats() {
@@ -2367,32 +2404,40 @@ function saveGlobalStats() {
     // Calcular el último día del mes seleccionado
     const [year, month] = monthStr.split('-').map(Number);
     const lastDay = new Date(year, month, 0).getDate(); // Día 0 del siguiente mes = último día del mes actual
-    const savedDate = `${year} -${String(month).padStart(2, '0')} -${String(lastDay).padStart(2, '0')} `;
+    // FIX: Eliminar espacios extra en la fecha
+    const savedDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+    // FIX: Eliminar espacios extra en la clave del mes si existían
+    const monthKey = `${year}-${String(month).padStart(2, '0')}`;
 
     const data = {
         savedDate: savedDate, // Último día del mes seleccionado
         ig: {
             followersOrganic: parseInt(document.getElementById('gs-ig-followers-organic').value) || 0,
+            followersLost: parseInt(document.getElementById('gs-ig-followers-lost').value) || 0, // Nuevo
             messages: parseInt(document.getElementById('gs-ig-messages').value) || 0,
             sales: parseInt(document.getElementById('gs-ig-sales').value) || 0
         },
         tk: {
             followersOrganic: parseInt(document.getElementById('gs-tk-followers-organic').value) || 0,
+            followersLost: parseInt(document.getElementById('gs-tk-followers-lost').value) || 0, // Nuevo
             messages: parseInt(document.getElementById('gs-tk-messages').value) || 0,
             sales: parseInt(document.getElementById('gs-tk-sales').value) || 0
         },
         fb: {
             followersOrganic: parseInt(document.getElementById('gs-fb-followers-organic').value) || 0,
+            followersLost: parseInt(document.getElementById('gs-fb-followers-lost').value) || 0, // Nuevo
             messages: parseInt(document.getElementById('gs-fb-messages').value) || 0,
             sales: parseInt(document.getElementById('gs-fb-sales').value) || 0
         }
     };
 
-    globalBusinessStats[monthStr] = data;
+    // Usar la clave corregida sin espacios
+    globalBusinessStats[monthKey] = data;
 
     // Guardar con separación por workspace
     if (IS_LOCAL_MODE) {
-        localStorage.setItem(`local_globalStats_${currentWorkspace} `, JSON.stringify(globalBusinessStats));
+        localStorage.setItem(`local_globalStats_${currentWorkspace}`, JSON.stringify(globalBusinessStats));
     } else {
         // Guardar en base de datos
         fetch('/api/data?action=saveGlobalStats', {
@@ -2400,7 +2445,7 @@ function saveGlobalStats() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 workspace: currentWorkspace,
-                monthKey: monthStr,
+                monthKey: monthKey,
                 data: data
             })
         }).catch(err => {
@@ -3432,71 +3477,103 @@ function renderStatsCharts() {
 }
 
 
-// Función para calcular seguidores ACUMULATIVOS día a día (reels + orgánicos)
+// Función para calcular seguidores ACUMULATIVOS día a día (reels + orgánicos - perdidos)
 function calculateMonthlyFollowers() {
-    // 1. Recolectar todas las fechas de reels publicados
-    const reelDatesSet = new Set();
+    // 1. Recolectar todas las fechas de reels publicados y totales mensuales
+    const allDatesSet = new Set();
 
+    // De Reels
     guiones.filter(g => g.estado === 'Publicado' && g.formato === 'Reel').forEach(g => {
-        try {
-            reelDatesSet.add(g.fecha); // Formato: YYYY-MM-DD
-        } catch (e) { }
+        try { allDatesSet.add(g.fecha); } catch (e) { }
     });
 
-    // 2. Recolectar fechas cuando se guardaron los totales orgánicos (usar la fecha real de guardado)
-    const organicDatesSet = new Set();
+    // De Totales Mensuales (soporte para key antigua y nueva)
     Object.entries(globalBusinessStats).forEach(([monthStr, data]) => {
         if (data.savedDate) {
-            // Usar la fecha exacta en que se guardaron los totales
-            organicDatesSet.add(data.savedDate);
+            // Limpiar espacios si vienen de formato antiguo
+            const cleanDate = data.savedDate.replace(/\s+/g, '');
+            allDatesSet.add(cleanDate);
         }
     });
 
-    // 3. Combinar ambas fechas
-    const allDatesSet = new Set([...reelDatesSet, ...organicDatesSet]);
     const sortedDates = Array.from(allDatesSet).sort();
+    if (sortedDates.length === 0) return { labels: [], instagram: [], tiktok: [], facebook: [] };
 
-    if (sortedDates.length === 0) {
-        return { labels: [], instagram: [], tiktok: [], facebook: [] };
-    }
+    // 2. Definir Rango de Fechas para VISUALIZACIÓN
+    // Pero primero necesitamos calcular el ACUMULADO HISTÓRICO hasta la fecha de inicio
 
-    // 4. Aplicar filtros de año y mes
-    const filteredDates = sortedDates.filter(dateStr => {
-        const date = new Date(dateStr + 'T12:00:00');
-        const year = date.getFullYear();
-        const month = date.getMonth();
-
-        if (currentStatsFilterYear !== 'all' && year !== parseInt(currentStatsFilterYear)) return false;
-        if (currentStatsFilterMonth !== 'all' && month !== parseInt(currentStatsFilterMonth)) return false;
-
-        return true;
-    });
-
-    if (filteredDates.length === 0) {
-        return { labels: [], instagram: [], tiktok: [], facebook: [] };
-    }
-
-    // 5. Agregar punto inicial en 0 (primer día del primer mes o año filtrado)
-    const firstDate = new Date(filteredDates[0] + 'T12:00:00');
-    let startDate;
+    let startDateForView;
+    const firstDateEver = new Date(sortedDates[0] + 'T12:00:00');
 
     if (currentStatsFilterMonth !== 'all') {
-        // Si hay filtro de mes, empezar el día 1 de ese mes
         const filterMonth = parseInt(currentStatsFilterMonth);
-        const filterYear = currentStatsFilterYear !== 'all' ? parseInt(currentStatsFilterYear) : firstDate.getFullYear();
-        startDate = `${filterYear} -${String(filterMonth + 1).padStart(2, '0')}-01`;
+        const filterYear = currentStatsFilterYear !== 'all' ? parseInt(currentStatsFilterYear) : new Date().getFullYear();
+        startDateForView = new Date(filterYear, filterMonth, 1);
     } else if (currentStatsFilterYear !== 'all') {
-        // Si hay filtro de año, empezar el 1 de enero de ese año
-        startDate = `${currentStatsFilterYear}-01-01`;
+        startDateForView = new Date(parseInt(currentStatsFilterYear), 0, 1);
     } else {
-        // Sin filtros, empezar el día 1 del mes del primer dato
-        startDate = `${firstDate.getFullYear()} -${String(firstDate.getMonth() + 1).padStart(2, '0')}-01`;
+        startDateForView = new Date(firstDateEver.getFullYear(), firstDateEver.getMonth(), 1);
     }
 
-    // Agregar fecha inicial si no está ya en los datos
-    if (!filteredDates.includes(startDate)) {
-        filteredDates.unshift(startDate);
-        filteredDates.sort();
+    // 3. Calcular Acumulado Inicial (Todo lo anterior a startDateForView)
+    let igAccumulator = 0;
+    let tkAccumulator = 0;
+    let fbAccumulator = 0;
+
+    // Recorrer TODAS las fechas cronológicamente para sumar el historial
+    // Solo nos importa el valor final acumulado justo antes de startDateForView
+
+    sortedDates.forEach(dateStr => {
+        const currentDate = new Date(dateStr + 'T12:00:00');
+
+        // Si la fecha es igual o posterior al inicio de la vista, no la procesamos aquí, 
+        // se procesará en el loop de visualización. 
+        // EXCEPCIÓN: Si no hay filtro, startDateForView es la primera fecha, asi que el acumulado inicial es 0.
+        if (currentDate >= startDateForView) return;
+
+        // Sumar Reels de este día pasado
+        const guionesDay = guiones.filter(g => g.estado === 'Publicado' && g.formato === 'Reel' && g.fecha === dateStr);
+        guionesDay.forEach(g => {
+            g.plataformas.forEach(platform => {
+                const stat = statistics.find(s => s.guion_id === g.id && s.platform === platform);
+                if (stat && stat.metrics.followers) {
+                    if (platform === 'Instagram') igAccumulator += stat.metrics.followers;
+                    else if (platform === 'TikTok') tkAccumulator += stat.metrics.followers;
+                    else if (platform === 'Facebook') fbAccumulator += stat.metrics.followers;
+                }
+            });
+        });
+
+        // Sumar Resultados Orgánicos (y restar perdidos) de este mes pasado
+        Object.entries(globalBusinessStats).forEach(([mStr, data]) => {
+            const cleanSavedDate = (data.savedDate || '').replace(/\s+/g, '');
+            if (cleanSavedDate === dateStr) {
+                igAccumulator += (data.ig?.followersOrganic || 0) - (data.ig?.followersLost || 0);
+                tkAccumulator += (data.tk?.followersOrganic || 0) - (data.tk?.followersLost || 0);
+                fbAccumulator += (data.fb?.followersOrganic || 0) - (data.fb?.followersLost || 0);
+            }
+        });
+    });
+
+    // 4. Filtrar fechas para Visualización
+    const viewDates = sortedDates.filter(dateStr => {
+        const date = new Date(dateStr + 'T12:00:00');
+        return date >= startDateForView &&
+            (currentStatsFilterYear === 'all' || date.getFullYear() === parseInt(currentStatsFilterYear)) &&
+            (currentStatsFilterMonth === 'all' || date.getMonth() === parseInt(currentStatsFilterMonth));
+    });
+
+    // Asegurar que la fecha de inicio esté presente para graficar el punto de partida
+    const startStr = startDateForView.toISOString().split('T')[0];
+    if (!viewDates.includes(startStr) && viewDates.length > 0) {
+        // Solo agregar si está dentro del rango lógico (esto es visualmente mejor)
+        // O simplemente empezamos a graficar desde el primer dato DISPONIBLE en el rango.
+        // Opción: Agregar el día 1 del mes con el valor acumulado.
+        viewDates.unshift(startStr);
+        viewDates.sort();
+    } else if (viewDates.length === 0) {
+        // Si no hay datos en el mes, mostramos al menos el día 1 con el acumulado
+        viewDates.push(startStr);
     }
 
     const labels = [];
@@ -3504,62 +3581,47 @@ function calculateMonthlyFollowers() {
     const tiktokData = [];
     const facebookData = [];
 
-    // Variables para acumulación
-    let igAccumulator = 0;
-    let tkAccumulator = 0;
-    let fbAccumulator = 0;
-
-    // 6. Procesar cada fecha
-    filteredDates.forEach(dateStr => {
-        const date = new Date(dateStr + 'T12:00:00');
-        const year = date.getFullYear();
-        const month = date.getMonth() + 1;
-        const monthStr = `${year} -${String(month).padStart(2, '0')} `;
-
+    // 5. Procesar rango de visualización
+    viewDates.forEach(dateStr => {
         // Formatear label
+        const date = new Date(dateStr + 'T12:00:00');
         const day = date.getDate();
         const monthName = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'][date.getMonth()];
+        labels.push(`${day} ${monthName}`);
 
-        // Mostrar día y mes
-        labels.push(`${day} ${monthName} `);
+        let igChange = 0;
+        let tkChange = 0;
+        let fbChange = 0;
 
-        let igFollowersToday = 0;
-        let tkFollowersToday = 0;
-        let fbFollowersToday = 0;
-
-        // A. Sumar seguidores de reels publicados en esta fecha
+        // Sumar Reels de este día
         const guionesDay = guiones.filter(g => g.estado === 'Publicado' && g.formato === 'Reel' && g.fecha === dateStr);
-
         guionesDay.forEach(g => {
             g.plataformas.forEach(platform => {
                 const stat = statistics.find(s => s.guion_id === g.id && s.platform === platform);
                 if (stat && stat.metrics.followers) {
-                    if (platform === 'Instagram') {
-                        igFollowersToday += stat.metrics.followers;
-                    } else if (platform === 'TikTok') {
-                        tkFollowersToday += stat.metrics.followers;
-                    } else if (platform === 'Facebook') {
-                        fbFollowersToday += stat.metrics.followers;
-                    }
+                    if (platform === 'Instagram') igChange += stat.metrics.followers;
+                    else if (platform === 'TikTok') tkChange += stat.metrics.followers;
+                    else if (platform === 'Facebook') fbChange += stat.metrics.followers;
                 }
             });
         });
 
-        // B. Si esta es la fecha guardada para algún mes, agregar seguidores orgánicos
+        // Sumar Resultados Orgánicos (y restar perdidos)
         Object.entries(globalBusinessStats).forEach(([mStr, data]) => {
-            if (data.savedDate === dateStr) {
-                igFollowersToday += (data.ig?.followersOrganic || 0);
-                tkFollowersToday += (data.tk?.followersOrganic || 0);
-                fbFollowersToday += (data.fb?.followersOrganic || 0);
+            const cleanSavedDate = (data.savedDate || '').replace(/\s+/g, '');
+            if (cleanSavedDate === dateStr) {
+                igChange += (data.ig?.followersOrganic || 0) - (data.ig?.followersLost || 0);
+                tkChange += (data.tk?.followersOrganic || 0) - (data.tk?.followersLost || 0);
+                fbChange += (data.fb?.followersOrganic || 0) - (data.fb?.followersLost || 0);
             }
         });
 
-        // Acumular
-        igAccumulator += igFollowersToday;
-        tkAccumulator += tkFollowersToday;
-        fbAccumulator += fbFollowersToday;
+        // Actualizar Acumuladores
+        igAccumulator += igChange;
+        tkAccumulator += tkChange;
+        fbAccumulator += fbChange;
 
-        // Guardar datos acumulados
+        // Guardar Puntos en la Gráfica
         instagramData.push(igAccumulator);
         tiktokData.push(tkAccumulator);
         facebookData.push(fbAccumulator);
