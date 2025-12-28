@@ -2299,7 +2299,15 @@ function renderStatsCharts() {
     viewsCard.className = 'chart-card';
     viewsCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
     viewsCard.innerHTML = `<h3 style="margin-bottom: 15px;">Vistas por Plataforma</h3>`;
-    viewsCard.appendChild(viewsCanvas);
+
+    // Fix: Wrapper para evitar crecimiento infinito
+    const viewsContainer = document.createElement('div');
+    viewsContainer.style.position = 'relative';
+    viewsContainer.style.height = '300px';
+    viewsContainer.style.width = '100%';
+    viewsContainer.appendChild(viewsCanvas);
+
+    viewsCard.appendChild(viewsContainer);
     chartsGrid.appendChild(viewsCard);
 
     // Preparar datos
@@ -2374,7 +2382,15 @@ function renderStatsCharts() {
     engCard.className = 'chart-card';
     engCard.style.cssText = 'background: var(--bg-secondary); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);';
     engCard.innerHTML = `<h3 style="margin-bottom: 15px;">Engagement Promedio (%)</h3>`;
-    engCard.appendChild(engCanvas);
+
+    // Fix: Wrapper para evitar crecimiento infinito
+    const engContainer = document.createElement('div');
+    engContainer.style.position = 'relative';
+    engContainer.style.height = '300px';
+    engContainer.style.width = '100%';
+    engContainer.appendChild(engCanvas);
+
+    engCard.appendChild(engContainer);
     chartsGrid.appendChild(engCard);
 
     const ctxEng = engCanvas.getContext('2d');
