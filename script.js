@@ -39,8 +39,115 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('  - deleteGuion:', typeof deleteGuion);
     console.log('  - showUserManagement:', typeof showUserManagement);
     console.log('  - showWorkspaceManagement:', typeof showWorkspaceManagement);
+    console.log('  - showWorkspaceManagement:', typeof showWorkspaceManagement);
+
+    // Inyectar estilos correctivos y responsivos
+    injectCustomStyles();
+
     checkAuthentication();
 });
+
+function injectCustomStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+        /* --- CALENDAR WRAPPING FIX (Desktop & Mobile) --- */
+        /* Forzar que el grid respete el ancho disponible y no se expanda por contenido */
+        .calendar-grid {
+            grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+        }
+
+        /* Hacer que el contenido de texto baje de línea en lugar de ensanchar la celda */
+        .day-guion, .day-note {
+            white-space: normal !important;
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important; 
+            overflow: hidden; /* Seguridad extra */
+            max-width: 100%;
+        }
+
+        /* --- MOBILE OPTIMIZATION (< 768px) --- */
+        @media (max-width: 768px) {
+            /* 1. Calendario transformado a lista vertical para legibilidad */
+            .calendar-grid {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 10px;
+            }
+
+            /* Ocultar cabeceras de días (Lun, Mar...) ya que ahora es secuencial */
+            .day-header {
+                display: none !important; 
+            }
+
+            .day-cell {
+                min-height: auto !important; /* Altura flexible según contenido */
+                height: auto !important;
+                padding: 15px !important;
+            }
+
+            .day-number {
+                position: relative !important;
+                margin-bottom: 10px;
+                font-weight: bold;
+                top: auto;
+                right: auto;
+            }
+
+            /* 2. Gráficas en 1 sola columna */
+            #statsChartsGrid, .stats-charts-grid {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* 3. Ajuste de Tabs para que no se rompan */
+            .tabs {
+                flex-wrap: wrap;
+                gap: 5px;
+            }
+            .tab-btn {
+                flex: 1 1 100px;
+                padding: 8px 12px;
+                font-size: 0.9rem;
+            }
+
+            /* 4. Modales full width */
+            .modal-content {
+                width: 95% !important;
+                margin: 10px auto !important;
+                max-height: 90vh;
+            }
+
+            /* 5. Ajustes generales de padding */
+            .container {
+                padding: 10px !important;
+            }
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            .header-right {
+                width: 100%;
+                justify-content: space-between;
+                flex-wrap: wrap;
+            }
+            
+            /* Ajuste del selector de workspace */
+            .workspace-buttons {
+                grid-template-columns: 1fr !important;
+            }
+            
+            /* Ajuste de filtros */
+            .guiones-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-select, #addGuionBtn {
+                width: 100%;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
 
 // Verificar autenticación
 async function checkAuthentication() {
