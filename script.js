@@ -596,7 +596,26 @@ function updateUserInfo() {
     if (currentUser.role === 'admin') {
         document.getElementById('btnUserManagement').style.display = 'flex';
         const btnWorkspaces = document.getElementById('btnWorkspaceManagement');
-        if (btnWorkspaces) btnWorkspaces.style.display = 'flex';
+        if (btnWorkspaces) {
+            btnWorkspaces.style.display = 'flex';
+
+            // NUCLEAR: Agregar event listener directo
+            btnWorkspaces.onclick = function () {
+                console.log('🚀 Botón Gestionar Calendarios clickeado');
+                try {
+                    renderWorkspacesList();
+                    openModal('workspaceManagementModal');
+                    if (!window.workspaceModalsInitialized) {
+                        initializeWorkspaceModals();
+                        window.workspaceModalsInitialized = true;
+                    }
+                    console.log('✅ Modal abierto exitosamente');
+                } catch (e) {
+                    console.error('❌ Error al abrir modal:', e);
+                    alert('Error al abrir el modal: ' + e.message);
+                }
+            };
+        }
     }
 }
 
