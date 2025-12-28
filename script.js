@@ -1998,13 +1998,16 @@ function openGlobalStatsModal() {
 }
 
 function loadGlobalStatsForm(monthStr) {
-    const data = globalBusinessStats[monthStr] || { ig: {}, tk: {} };
+    const data = globalBusinessStats[monthStr] || { ig: {}, tk: {}, fb: {} };
     document.getElementById('gs-ig-followers-organic').value = data.ig?.followersOrganic || 0;
     document.getElementById('gs-ig-messages').value = data.ig?.messages || 0;
     document.getElementById('gs-ig-sales').value = data.ig?.sales || 0;
     document.getElementById('gs-tk-followers-organic').value = data.tk?.followersOrganic || 0;
     document.getElementById('gs-tk-messages').value = data.tk?.messages || 0;
     document.getElementById('gs-tk-sales').value = data.tk?.sales || 0;
+    document.getElementById('gs-fb-followers-organic').value = data.fb?.followersOrganic || 0;
+    document.getElementById('gs-fb-messages').value = data.fb?.messages || 0;
+    document.getElementById('gs-fb-sales').value = data.fb?.sales || 0;
 }
 
 function saveGlobalStats() {
@@ -2021,6 +2024,11 @@ function saveGlobalStats() {
             followersOrganic: parseInt(document.getElementById('gs-tk-followers-organic').value) || 0,
             messages: parseInt(document.getElementById('gs-tk-messages').value) || 0,
             sales: parseInt(document.getElementById('gs-tk-sales').value) || 0
+        },
+        fb: {
+            followersOrganic: parseInt(document.getElementById('gs-fb-followers-organic').value) || 0,
+            messages: parseInt(document.getElementById('gs-fb-messages').value) || 0,
+            sales: parseInt(document.getElementById('gs-fb-sales').value) || 0
         }
     };
 
@@ -2149,14 +2157,17 @@ function renderStatsSummary() {
 
         // Sumar según plataforma
         if (currentStatsFilterPlatform === 'all') {
-            totalMessages += (data.ig?.messages || 0) + (data.tk?.messages || 0);
-            totalSales += (data.ig?.sales || 0) + (data.tk?.sales || 0);
+            totalMessages += (data.ig?.messages || 0) + (data.tk?.messages || 0) + (data.fb?.messages || 0);
+            totalSales += (data.ig?.sales || 0) + (data.tk?.sales || 0) + (data.fb?.sales || 0);
         } else if (currentStatsFilterPlatform === 'Instagram') {
             totalMessages += (data.ig?.messages || 0);
             totalSales += (data.ig?.sales || 0);
         } else if (currentStatsFilterPlatform === 'TikTok') {
             totalMessages += (data.tk?.messages || 0);
             totalSales += (data.tk?.sales || 0);
+        } else if (currentStatsFilterPlatform === 'Facebook') {
+            totalMessages += (data.fb?.messages || 0);
+            totalSales += (data.fb?.sales || 0);
         }
     });
 
@@ -2599,6 +2610,19 @@ function renderStatsCharts() {
         });
     }
 
+    if (currentStatsFilterPlatform === 'all' || currentStatsFilterPlatform === 'Facebook') {
+        datasets.push({
+            label: 'Facebook',
+            data: monthlyData.facebook,
+            borderColor: '#1877f2',
+            backgroundColor: 'rgba(24, 119, 242, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6
+        });
+    }
+
     const ctxFollowers = followersCanvas.getContext('2d');
     chartInstances['followers-growth'] = new Chart(ctxFollowers, {
         type: 'line',
@@ -2702,10 +2726,12 @@ function calculateMonthlyFollowers() {
     const labels = [];
     const instagramData = [];
     const tiktokData = [];
+    const facebookData = [];
 
     // Variables para acumulación
     let igAccumulator = 0;
     let tkAccumulator = 0;
+    let fbAccumulator = 0;
 
     // 5. Procesar cada fecha
     filteredDates.forEach(dateStr => {
@@ -2727,6 +2753,7 @@ function calculateMonthlyFollowers() {
 
         let igFollowersToday = 0;
         let tkFollowersToday = 0;
+        let fbFollowersToday = 0;
 
         // A. Sumar seguidores de reels publicados en esta fecha
         const guionesDay = guiones.filter(g => g.estado === 'Publicado' && g.formato === 'Reel' && g.fecha === dateStr);
@@ -2739,6 +2766,8 @@ function calculateMonthlyFollowers() {
                         igFollowersToday += stat.metrics.followers;
                     } else if (platform === 'TikTok') {
                         tkFollowersToday += stat.metrics.followers;
+                    } else if (platform === 'Facebook') {
+                        fbFollowersToday += stat.metrics.followers;
                     }
                 }
             });
@@ -2749,16 +2778,19 @@ function calculateMonthlyFollowers() {
             const data = globalBusinessStats[monthStr];
             igFollowersToday += (data.ig?.followersOrganic || 0);
             tkFollowersToday += (data.tk?.followersOrganic || 0);
+            fbFollowersToday += (data.fb?.followersOrganic || 0);
         }
 
         // Acumular
         igAccumulator += igFollowersToday;
         tkAccumulator += tkFollowersToday;
+        fbAccumulator += fbFollowersToday;
 
         // Guardar datos acumulados
         instagramData.push(igAccumulator);
         tiktokData.push(tkAccumulator);
+        facebookData.push(fbAccumulator);
     });
 
-    return { labels, instagram: instagramData, tiktok: tiktokData };
+    return { labels, instagram: instagramData, tiktok: tiktokData, facebook: facebookData };
 }
