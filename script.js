@@ -3202,8 +3202,8 @@ function renderStatsCharts() {
         playbackCard.appendChild(playbackContainer);
         chartsGrid.appendChild(playbackCard);
 
-        // Forzar grid de 2 columnas si hay suficientes gráficas
-        chartsGrid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+        // Forzar grid de 2 columnas si hay suficientes gráficas. minmax(0, 1fr) evita desbordamiento.
+        chartsGrid.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
 
         const playbackLabels = sortedGuions.map(g => g.title.length > 15 ? g.title.substring(0, 15) + '...' : g.title);
         const dataIG = sortedGuions.map(g => g.Instagram);
