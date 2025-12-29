@@ -2078,7 +2078,14 @@ const readFileAsBase64 = (file) => {
 
 // Editar workspace
 window.editWorkspace = function (name, displayName, currentLogo = '') {
+    console.log('🔧 editWorkspace llamado:', { name, displayName, currentLogo });
     const modal = document.getElementById('addWorkspaceModal');
+    if (!modal) {
+        console.error('❌ Modal addWorkspaceModal no encontrado');
+        alert('Error: Modal no encontrado');
+        return;
+    }
+    console.log('✅ Modal encontrado, configurando...');
     document.getElementById('modalTitleWorkspace').textContent = 'Editar Calendario';
 
     document.getElementById('newWorkspaceName').value = name;
@@ -2416,67 +2423,75 @@ function saveGlobalStats() {
     alert('Totales guardados correctamente');
 }
 
-function saveGlobalStats() {
+async function saveGlobalStats() {
     const monthStr = document.getElementById('globalStatsMonth').value;
     if (!monthStr) return alert('Selecciona un mes');
 
     // Calcular el último día del mes seleccionado
     const [year, month] = monthStr.split('-').map(Number);
-    const lastDay = new Date(year, month, 0).getDate(); // Día 0 del siguiente mes = último día del mes actual
-    // FIX: Eliminar espacios extra en la fecha
+    const lastDay = new Date(year, month, 0).getDate();
     const savedDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-
-    // FIX: Eliminar espacios extra en la clave del mes si existían
     const monthKey = `${year}-${String(month).padStart(2, '0')}`;
 
     const data = {
-        savedDate: savedDate, // Último día del mes seleccionado
+        savedDate: savedDate,
         ig: {
             followersOrganic: parseInt(document.getElementById('gs-ig-followers-organic').value) || 0,
-            followersLost: parseInt(document.getElementById('gs-ig-followers-lost').value) || 0, // Nuevo
+            followersLost: parseInt(document.getElementById('gs-ig-followers-lost').value) || 0,
             messages: parseInt(document.getElementById('gs-ig-messages').value) || 0,
             sales: parseInt(document.getElementById('gs-ig-sales').value) || 0
         },
         tk: {
             followersOrganic: parseInt(document.getElementById('gs-tk-followers-organic').value) || 0,
-            followersLost: parseInt(document.getElementById('gs-tk-followers-lost').value) || 0, // Nuevo
+            followersLost: parseInt(document.getElementById('gs-tk-followers-lost').value) || 0,
             messages: parseInt(document.getElementById('gs-tk-messages').value) || 0,
             sales: parseInt(document.getElementById('gs-tk-sales').value) || 0
         },
         fb: {
             followersOrganic: parseInt(document.getElementById('gs-fb-followers-organic').value) || 0,
-            followersLost: parseInt(document.getElementById('gs-fb-followers-lost').value) || 0, // Nuevo
+            followersLost: parseInt(document.getElementById('gs-fb-followers-lost').value) || 0,
             messages: parseInt(document.getElementById('gs-fb-messages').value) || 0,
             sales: parseInt(document.getElementById('gs-fb-sales').value) || 0
         }
     };
 
-    // Usar la clave corregida sin espacios
     globalBusinessStats[monthKey] = data;
 
-    // Guardar con separación por workspace
     if (IS_LOCAL_MODE) {
         localStorage.setItem(`local_globalStats_${currentWorkspace}`, JSON.stringify(globalBusinessStats));
+        closeModal('globalStatsModal');
+        renderStatsSummary();
+        renderStatsCharts();
+        alert('Totales guardados correctamente');
     } else {
-        // Guardar en base de datos
-        fetch('/api/data?action=saveGlobalStats', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                workspace: currentWorkspace,
-                monthKey: monthKey,
-                data: data
-            })
-        }).catch(err => {
-            console.error('Error al guardar global stats:', err);
-            alert('Error al guardar los totales. Intenta nuevamente.');
-        });
-    }
+        try {
+            console.log('💾 Guardando en BD:', { workspace: currentWorkspace, monthKey, data });
+            const response = await fetch(`/api/data?action=saveGlobalStats&workspace=${currentWorkspace}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ workspace: currentWorkspace, monthKey: monthKey, data: data })
+            });
 
-    closeModal('globalStatsModal');
-    renderStatsSummary(); // Actualizar resumen
-    renderStatsCharts(); // Actualizar gráficas incluyendo la de seguidores
-    alert('Totales guardados correctamente');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('✅ Respuesta del servidor:', result);
+
+            if (result.success) {
+                closeModal('globalStatsModal');
+                renderStatsSummary();
+                renderStatsCharts();
+                alert('Totales guardados correctamente en la base de datos');
+            } else {
+                throw new Error('El servidor no confirmó el guardado');
+            }
+        } catch (err) {
+            console.error('❌ Error al guardar:', err);
+            alert('Error al guardar los totales: ' + err.message);
+        }
+    }
 }
 
 function renderStatsEntryList() {
