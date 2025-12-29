@@ -460,14 +460,14 @@ function showWorkspaceSelector() {
         // Icono (usar diferentes iconos según el workspace)
         let icon;
         if (ws.logo) {
-            icon = `<img src="${ws.logo}" alt="${ws.display_name}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin-bottom: 15px;">`;
+            icon = `<img src="${ws.logo}" alt="${ws.display_name}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 15px;">`;
         } else {
             icon = ws.name === 'personal'
-                ? `<svg class="workspace-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                ? `<svg class="workspace-icon" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
                </svg>`
-                : `<svg class="workspace-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                : `<svg class="workspace-icon" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
                 <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
                </svg>`;
