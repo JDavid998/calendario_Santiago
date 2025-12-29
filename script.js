@@ -1,7 +1,7 @@
 ﻿// ============================================
 // CONFIGURACIÓN CENTRAL
 // ============================================
-const IS_LOCAL_MODE = true;
+const IS_LOCAL_MODE = false;
 
 // ============================================
 // SISTEMA DE AUTENTICACIÓN Y ROLES
